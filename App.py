@@ -40,7 +40,6 @@ st.markdown("""
         color: #0a0a0a !important;
     }
 
-    /* City map labels */
     .city-selected {
         background: #1a1a2e;
         border: 2px solid #1a1a2e;
@@ -77,8 +76,6 @@ st.markdown("""
         font-size: 13px;
         font-weight: 700;
     }
-
-    /* ── Group titles ── */
     .result-group-title {
         font-size: 15px;
         font-weight: 800;
@@ -88,8 +85,6 @@ st.markdown("""
         border-bottom: 3px solid #0a0a0a;
         letter-spacing: -0.01em;
     }
-
-    /* ── Variable cards ── */
     .var-card {
         border: 1.5px solid #c9d4e0;
         border-radius: 12px;
@@ -112,9 +107,7 @@ st.markdown("""
     }
     .var-icon-building { background: #dce8f8; }
     .var-icon-economic { background: #fef3c7; }
-
     .var-info { flex: 1; min-width: 0; }
-
     .var-symbol {
         display: inline-block;
         font-size: 11px;
@@ -127,11 +120,7 @@ st.markdown("""
         letter-spacing: 0.03em;
         margin-right: 5px;
     }
-    .var-symbol-econ {
-        background: #78350f;
-        color: #ffffff;
-    }
-
+    .var-symbol-econ { background: #78350f; color: #ffffff; }
     .var-label {
         font-size: 12px;
         font-weight: 600;
@@ -148,14 +137,7 @@ st.markdown("""
         letter-spacing: -0.01em;
         line-height: 1.2;
     }
-    .var-range {
-        font-size: 11px;
-        font-weight: 600;
-        color: #64748b;
-        margin-top: 2px;
-    }
-
-    /* Progress bar */
+    .var-range { font-size: 11px; font-weight: 600; color: #64748b; margin-top: 2px; }
     .bar-wrap  { width: 72px; flex-shrink: 0; text-align: right; }
     .bar-track { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 3px; }
     .bar-fill  { height: 6px; border-radius: 99px; }
@@ -179,21 +161,22 @@ CITIES = {
     "Yellowknife": (62.4540, -114.3718),
 }
 
+# ── FIXED: Loan/Rebate ranges corrected to match the training dataset ────────
 RANGES = {
     "V_bites":      (0.05, 0.25),
     "Albedo_roof":  (0.10, 0.70),
     "A_ST":         (0.10, 0.60),
     "Rvalue_roof":  (5.46, 11.0),
-    "Loan":         (0,    50000),
-    "Rebate":       (0,    10000),
-    "Rvalue_wall":  (3.60, 8.00),
-    "Glazing":      (0.20, 0.40),
-    "IntRate":      (0.75, 5.00),
-    "Infiltration": (0.50, 1.50),
-    "Electax":      (0.00, 4.00),
-    "SHGC":         (0.10, 0.70),
-    "Fueltax":      (0.00, 8.00),
-    "A_PV":         (0.10, 0.60),
+    "Loan":         (0,    10000),   # was (0, 50000) — swapped with Rebate
+    "Rebate":       (20000, 50000),  # was (0, 10000) — swapped with Loan
+    "Rvalue_wall":  (3.60,  8.00),
+    "Glazing":      (0.10,  0.40),
+    "IntRate":      (0.25,  1.50),   # was (0.75, 5.00) — corrected to dataset range
+    "Infiltration": (0.50,  1.50),
+    "Electax":      (0.00, 10.00),   # was (0, 4) — corrected to dataset range
+    "SHGC":         (0.10,  0.70),
+    "Fueltax":      (0.00, 10.00),   # was (0, 8) — corrected to dataset range
+    "A_PV":         (0.10,  0.60),
 }
 
 BUILDING_VARS = {
@@ -219,19 +202,27 @@ ECONOMIC_VARS = {
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
 
 # ─────────────────────────────────────────
-# LOAD MODEL
+# ── CHANGED: Load one model per city ─────
+# Place all city_models/ files next to app.py
 # ─────────────────────────────────────────
-@st.cache_resource
-def load_model():
-    m = joblib.load("retrofit_forward_model.pkl")
-    c = joblib.load("model_columns.pkl")
-    return m, c
+MODEL_DIR = "city_models"  # folder containing <City>_model.pkl and <City>_columns.pkl
 
-try:
-    model, model_columns = load_model()
-    model_ok = True
-except FileNotFoundError:
-    model_ok = False
+@st.cache_resource
+def load_city_models():
+    """Load all per-city models into a dict: {city: (model, columns)}."""
+    models = {}
+    missing = []
+    for city in CITIES:
+        try:
+            m = joblib.load(f"{MODEL_DIR}/{city}_model.pkl")
+            c = joblib.load(f"{MODEL_DIR}/{city}_columns.pkl")
+            models[city] = (m, c)
+        except FileNotFoundError:
+            missing.append(city)
+    return models, missing
+
+city_models, missing_cities = load_city_models()
+model_ok = len(city_models) > 0
 
 if "selected_city" not in st.session_state:
     st.session_state.selected_city = None
@@ -241,8 +232,15 @@ if "selected_city" not in st.session_state:
 # ─────────────────────────────────────────
 st.markdown("## 🏗️ AI Retrofit Decision Tool")
 st.caption("Click a city on the map, configure parameters, and run the optimizer.")
+
 if not model_ok:
-    st.error("⚠️ Model files not found — place `retrofit_forward_model.pkl` and `model_columns.pkl` next to app.py.")
+    st.error(
+        f"⚠️ No model files found — place the `city_models/` folder next to app.py. "
+        f"Run `train_city_models.py` to generate them."
+    )
+elif missing_cities:
+    st.warning(f"⚠️ Missing models for: {', '.join(missing_cities)}")
+
 st.markdown("---")
 
 # ─────────────────────────────────────────
@@ -261,6 +259,7 @@ with map_col:
 
     for city_name, (lat, lon) in CITIES.items():
         is_sel = (city_name == selected)
+        has_model = city_name in city_models
         if is_sel:
             folium.CircleMarker(location=[lat, lon], radius=20,
                                 color="#0a0a0a", fill=True,
@@ -272,9 +271,9 @@ with map_col:
             popup=folium.Popup(city_name, max_width=120),
             icon=folium.DivIcon(
                 html=f"""<div style="
-                    background:{'#0a0a0a' if is_sel else '#ffffff'};
+                    background:{'#0a0a0a' if is_sel else ('#ffffff' if has_model else '#fee2e2')};
                     color:{'#ffffff' if is_sel else '#0a0a0a'};
-                    border:2px solid {'#0a0a0a' if is_sel else '#64748b'};
+                    border:2px solid {'#0a0a0a' if is_sel else ('#64748b' if has_model else '#b91c1c')};
                     border-radius:50%;width:32px;height:32px;
                     display:flex;align-items:center;justify-content:center;
                     font-size:11px;font-weight:800;font-family:sans-serif;
@@ -293,10 +292,21 @@ with map_col:
 
     if selected:
         lat, lon = CITIES[selected]
+        # ── CHANGED: show per-city model R² in the city banner ───────────────
+        r2_badge = ""
+        if selected in city_models:
+            import json, os
+            stats_path = f"{MODEL_DIR}/city_stats.json"
+            if os.path.exists(stats_path):
+                with open(stats_path) as f:
+                    city_stats = json.load(f)
+                r2 = city_stats.get(selected, {}).get("model_r2", None)
+                if r2 is not None:
+                    r2_badge = f'&nbsp;<span style="font-size:12px;font-weight:600;color:#9aabb8;">Model R²={r2:.2f}</span>'
         st.markdown(
             f'<div class="city-selected">📍 {selected} &nbsp;&nbsp;'
             f'<span style="font-size:13px;font-weight:600;color:#c9d4e0;">'
-            f'{lat:.2f}°N, {abs(lon):.2f}°W</span></div>',
+            f'{lat:.2f}°N, {abs(lon):.2f}°W</span>{r2_badge}</div>',
             unsafe_allow_html=True)
     else:
         st.markdown('<div class="city-prompt">👆 Click a city marker on the map</div>',
@@ -342,19 +352,27 @@ with ctrl_col:
     use_lhs   = st.toggle("Latin Hypercube Sampling", value=True,
                           help="Better coverage than pure random with the same sample count")
 
-    ready = selected and weights_ok and model_ok
+    # ── CHANGED: check city has a model loaded ────────────────────────────────
+    city_has_model = selected in city_models
+    ready = selected and weights_ok and model_ok and city_has_model
     run = st.button(
         f"▶ Find best retrofit{' for ' + selected if selected else ''}",
         type="primary", use_container_width=True, disabled=not ready,
     )
     if not selected:
         st.caption("← Select a city on the map first")
+    elif not city_has_model:
+        st.caption(f"⚠️ No model file found for {selected}")
 
 # ─────────────────────────────────────────
 # OPTIMIZATION
 # ─────────────────────────────────────────
 if run and selected:
     city = selected
+
+    # ── CHANGED: pick the city-specific model and its column list ─────────────
+    model, model_columns = city_models[city]
+
     keys = list(RANGES.keys())
     lo   = np.array([RANGES[k][0] for k in keys])
     hi   = np.array([RANGES[k][1] for k in keys])
@@ -366,19 +384,23 @@ if run and selected:
         else:
             rng     = np.random.default_rng(42)
             samples = rng.uniform(lo, hi, size=(n_samples, len(keys)))
-        df = pd.DataFrame(samples, columns=keys)
-        df["City"] = city; df["SSP"] = ssp
-        df["BuildingFootprintArea_m2"] = footprint
-        df["ElectricityInflationRate"] = elec_inf
-        df["FuelInflationRate"]        = fuel_inf
 
-    with st.spinner("Running AI model…"):
-        X    = pd.get_dummies(df, columns=["City","SSP"])
-        X    = X.reindex(columns=model_columns, fill_value=0)
+        df = pd.DataFrame(samples, columns=keys)
+        # ── CHANGED: no City column — per-city model doesn't need it ──────────
+        df["SSP"]                        = ssp
+        df["BuildingFootprintArea_m2"]   = footprint
+        df["ElectricityInflationRate"]   = elec_inf
+        df["FuelInflationRate"]          = fuel_inf
+
+    with st.spinner(f"Running {city} model…"):
+        # ── CHANGED: only one-hot encode SSP (City removed) ───────────────────
+        X = pd.get_dummies(df, columns=["SSP"])
+        X = X.reindex(columns=model_columns, fill_value=0)
         pred = model.predict(X)
-        df["GHG"]   = pred[:, 3]
-        df["Owner"] = pred[:, 2]
-        df["Gov"]   = pred[:, 7]
+
+        df["GHG"]   = pred[:, 3]   # TotalCO2Sav
+        df["Owner"] = pred[:, 2]   # CostAnnualSysSave_CAD
+        df["Gov"]   = pred[:, 7]   # AnnGovtCostSav_CAD
 
         def norm(s): return (s - s.min()) / (s.max() - s.min() + 1e-9)
         df["GHG_n"]   = 1 - norm(df["GHG"])
@@ -407,6 +429,7 @@ if run and selected:
     def var_card(k, meta, best_val, is_economic=False):
         lo_v, hi_v = RANGES[k]
         pct = round((best_val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
+        pct = max(0, min(100, pct))
 
         if k in ("Loan", "Rebate") or meta["unit"] == "$":
             val_str = f"${best_val:,.0f}"
@@ -498,10 +521,8 @@ if run and selected:
             polar=dict(
                 radialaxis=dict(range=[0,1], showticklabels=False,
                                 gridcolor="#c9d4e0", linecolor="#c9d4e0"),
-                angularaxis=dict(
-                    tickfont=dict(size=12, color="#0a0a0a"),
-                    gridcolor="#c9d4e0",
-                ),
+                angularaxis=dict(tickfont=dict(size=12, color="#0a0a0a"),
+                                 gridcolor="#c9d4e0"),
             ),
             margin=dict(t=40,b=20,l=50,r=50), height=230,
             paper_bgcolor="white",
@@ -566,12 +587,12 @@ if run and selected:
             margin=dict(t=10,b=10,l=10,r=20), height=450,
             plot_bgcolor="white", paper_bgcolor="white",
             font=dict(color="#0a0a0a", size=12),
+            title=dict(font=dict(size=14, color="#0a0a0a")),
             xaxis=dict(showgrid=False,
                        title="|Correlation with composite score|",
                        title_font=dict(size=13, color="#0a0a0a"),
                        tickfont=dict(size=11, color="#0a0a0a")),
-            yaxis=dict(showgrid=False,
-                       tickfont=dict(size=12, color="#0a0a0a")),
+            yaxis=dict(showgrid=False, tickfont=dict(size=12, color="#0a0a0a")),
         )
         st.plotly_chart(fig_sens, use_container_width=True)
         st.markdown(
