@@ -557,49 +557,65 @@ if run and selected:
 
     # ── Sensitivity ───────────────────────────────
     with st.expander("📊 Sensitivity — which variables drive the score?"):
+
+        # Compute correlation for every parameter
         corrs = {}
         for k in list(RANGES.keys()):
             xs, ys = df[k].values, df["Score"].values
             mx, my = xs.mean(), ys.mean()
-            num = ((xs-mx)*(ys-my)).sum()
-            den = np.sqrt(((xs-mx)**2).sum()*((ys-my)**2).sum())+1e-9
-            corrs[k] = abs(num/den)
-        corr_sorted = dict(sorted(corrs.items(), key=lambda x: x[1], reverse=True))
+            num = ((xs - mx) * (ys - my)).sum()
+            den = np.sqrt(((xs - mx) ** 2).sum() * ((ys - my) ** 2).sum()) + 1e-9
+            corrs[k] = abs(num / den)
 
-        y_labels, bar_colors = [], []
-        for k in corr_sorted:
-            if k in ALL_VARS:
-                meta = ALL_VARS[k]
-                y_labels.append(f"{meta['icon']}  {meta['symbol']}  —  {meta['label']}")
-                bar_colors.append("#78350f" if k in ECONOMIC_VARS else "#1a1a2e")
-            else:
-                y_labels.append(k)
-                bar_colors.append("#1a1a2e")
+        # Split into two ordered dicts — building then economic
+        def make_chart(var_dict, color, title):
+            subset = {k: corrs[k] for k in var_dict if k in corrs}
+            subset = dict(sorted(subset.items(), key=lambda x: x[1]))  # ascending → bars left-to-right
+            y_labels = [
+                f"{var_dict[k]['icon']}  {var_dict[k]['symbol']}  —  {var_dict[k]['label']}"
+                for k in subset
+            ]
+            fig = go.Figure(go.Bar(
+                x=list(subset.values()),
+                y=y_labels,
+                orientation="h",
+                marker_color=color,
+                marker_line_width=0,
+            ))
+            fig.update_layout(
+                title=dict(text=title, font=dict(size=14, color="#0a0a0a")),
+                margin=dict(t=40, b=10, l=10, r=20),
+                height=320,
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                font=dict(color="#0a0a0a", size=12),
+                xaxis=dict(
+                    showgrid=False,
+                    title="|Correlation with score|",
+                    title_font=dict(size=12, color="#0a0a0a"),
+                    tickfont=dict(size=11, color="#0a0a0a"),
+                ),
+                yaxis=dict(showgrid=False, tickfont=dict(size=12, color="#0a0a0a")),
+            )
+            return fig
 
-        fig_sens = go.Figure(go.Bar(
-            x=list(corr_sorted.values()),
-            y=y_labels,
-            orientation="h",
-            marker_color=bar_colors,
-            marker_line_width=0,
-        ))
-        fig_sens.update_layout(
-            margin=dict(t=10,b=10,l=10,r=20), height=450,
-            plot_bgcolor="white", paper_bgcolor="white",
-            font=dict(color="#0a0a0a", size=12),
-            title=dict(font=dict(size=14, color="#0a0a0a")),
-            xaxis=dict(showgrid=False,
-                       title="|Correlation with composite score|",
-                       title_font=dict(size=13, color="#0a0a0a"),
-                       tickfont=dict(size=11, color="#0a0a0a")),
-            yaxis=dict(showgrid=False, tickfont=dict(size=12, color="#0a0a0a")),
-        )
-        st.plotly_chart(fig_sens, use_container_width=True)
-        st.markdown(
-            "⬛ **Dark** = building feature &nbsp;&nbsp;&nbsp; "
-            "🟫 **Brown** = economic parameter",
-            unsafe_allow_html=False,
-        )
+        sens_col1, sens_col2 = st.columns(2, gap="large")
+
+        with sens_col1:
+            st.markdown('<div class="result-group-title">🏗️ Building parameters</div>',
+                        unsafe_allow_html=True)
+            st.plotly_chart(
+                make_chart(BUILDING_VARS, "#1a1a2e", ""),
+                use_container_width=True,
+            )
+
+        with sens_col2:
+            st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
+                        unsafe_allow_html=True)
+            st.plotly_chart(
+                make_chart(ECONOMIC_VARS, "#78350f", ""),
+                use_container_width=True,
+            )
 
     # ── Top 10 ────────────────────────────────────
     with st.expander("🏆 Top 10 candidates"):
