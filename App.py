@@ -24,86 +24,142 @@ st.markdown("""
     .block-container {padding: 1rem 1.5rem;}
 
     [data-testid="metric-container"] {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: #f0f4f8;
+        border: 1px solid #c9d4e0;
         border-radius: 10px;
         padding: 12px 16px;
     }
+    [data-testid="metric-container"] label {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: #1a1a2e !important;
+    }
+    [data-testid="metric-container"] [data-testid="metric-value"] {
+        font-size: 22px !important;
+        font-weight: 800 !important;
+        color: #0a0a0a !important;
+    }
+
+    /* City map labels */
     .city-selected {
-        background: #eff6ff;
-        border: 2px solid #3b82f6;
+        background: #1a1a2e;
+        border: 2px solid #1a1a2e;
         border-radius: 10px;
         padding: 10px 16px;
         font-size: 18px;
-        font-weight: 700;
-        color: #1d4ed8;
+        font-weight: 800;
+        color: #ffffff;
         text-align: center;
         margin-bottom: 8px;
+        letter-spacing: 0.01em;
     }
     .city-prompt {
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
+        background: #f0f4f8;
+        border: 2px dashed #9aabb8;
         border-radius: 10px;
         padding: 10px 16px;
-        font-size: 13px;
-        color: #94a3b8;
+        font-size: 14px;
+        font-weight: 600;
+        color: #3a3a4a;
         text-align: center;
         margin-bottom: 8px;
     }
     .section-label {
-        font-size: 10px;
-        font-weight: 700;
-        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        color: #3a3a4a;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 6px;
+        letter-spacing: 0.10em;
+        margin-bottom: 8px;
     }
-    .warn { color: #dc2626; font-size: 12px; }
-
-    /* ── Result cards ── */
-    .result-group-title {
+    .warn {
+        color: #b91c1c;
         font-size: 13px;
         font-weight: 700;
-        color: #1e293b;
-        margin: 18px 0 10px;
-        padding-bottom: 6px;
-        border-bottom: 2px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
     }
+
+    /* ── Group titles ── */
+    .result-group-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0a0a0a;
+        margin: 18px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 3px solid #0a0a0a;
+        letter-spacing: -0.01em;
+    }
+
+    /* ── Variable cards ── */
     .var-card {
-        border: 1px solid #e2e8f0;
+        border: 1.5px solid #c9d4e0;
         border-radius: 12px;
         padding: 12px 14px;
         background: #ffffff;
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 8px;
-        transition: box-shadow 0.15s;
+        margin-bottom: 9px;
     }
-    .var-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
     .var-icon {
-        font-size: 22px;
-        width: 36px;
-        height: 36px;
+        font-size: 20px;
+        width: 40px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 8px;
+        border-radius: 10px;
         flex-shrink: 0;
     }
-    .var-icon-building { background: #eff6ff; }
-    .var-icon-economic { background: #fefce8; }
+    .var-icon-building { background: #dce8f8; }
+    .var-icon-economic { background: #fef3c7; }
+
     .var-info { flex: 1; min-width: 0; }
-    .var-label { font-size: 12px; color: #64748b; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .var-value { font-size: 16px; font-weight: 700; color: #1e293b; }
-    .var-range { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-    .bar-wrap  { width: 80px; flex-shrink: 0; }
-    .bar-track { height: 5px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
-    .bar-fill  { height: 5px; border-radius: 99px; }
-    .bar-pct   { font-size: 10px; color: #94a3b8; text-align: right; margin-top: 2px; }
+
+    .var-symbol {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        font-family: 'Courier New', monospace;
+        background: #1a1a2e;
+        color: #ffffff;
+        padding: 1px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.03em;
+        margin-right: 5px;
+    }
+    .var-symbol-econ {
+        background: #78350f;
+        color: #ffffff;
+    }
+
+    .var-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #3a3a4a;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .var-value {
+        font-size: 17px;
+        font-weight: 800;
+        color: #0a0a0a;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+    }
+    .var-range {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    /* Progress bar */
+    .bar-wrap  { width: 72px; flex-shrink: 0; text-align: right; }
+    .bar-track { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 3px; }
+    .bar-fill  { height: 6px; border-radius: 99px; }
+    .bar-pct   { font-size: 11px; font-weight: 700; color: #3a3a4a; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -140,26 +196,24 @@ RANGES = {
     "A_PV":         (0.10, 0.60),
 }
 
-# ── Building feature variables ──────────────────────
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",            "unit": "m²K/W",  "symbol": "V_roof",   "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",            "unit": "m²K/W",  "symbol": "V_wall",   "icon": "🧱"},
-    "Glazing":      {"label": "Glazing ratio",           "unit": "—",      "symbol": "G",        "icon": "🪟"},
-    "SHGC":         {"label": "Solar Heat Gain Coeff.",  "unit": "—",      "symbol": "SHGC",     "icon": "🌤️"},
-    "Infiltration": {"label": "Infiltration rate",       "unit": "ACH",    "symbol": "ṁ_inf",    "icon": "💨"},
-    "Albedo_roof":  {"label": "Roof albedo",             "unit": "—",      "symbol": "α",        "icon": "☀️"},
-    "A_PV":         {"label": "PV area ratio",           "unit": "—",      "symbol": "A_PV",     "icon": "⚡"},
-    "A_ST":         {"label": "Solar thermal area",      "unit": "—",      "symbol": "A_ST",     "icon": "🌡️"},
-    "V_bites":      {"label": "BITES system",            "unit": "—",      "symbol": "V_BITES",  "icon": "🧊"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "V_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "V_wall",  "icon": "🧱"},
+    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "G",       "icon": "🪟"},
+    "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
+    "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
+    "Albedo_roof":  {"label": "Roof albedo",              "unit": "—",     "symbol": "α",       "icon": "☀️"},
+    "A_PV":         {"label": "PV area ratio",            "unit": "—",     "symbol": "A_PV",    "icon": "⚡"},
+    "A_ST":         {"label": "Solar thermal area",       "unit": "—",     "symbol": "A_ST",    "icon": "🌡️"},
+    "V_bites":      {"label": "BITES system",             "unit": "—",     "symbol": "V_BITES", "icon": "🧊"},
 }
 
-# ── Economic / policy variables ─────────────────────
 ECONOMIC_VARS = {
-    "Loan":         {"label": "Loan amount",             "unit": "$",      "symbol": "L",        "icon": "🏦"},
-    "Rebate":       {"label": "Rebate amount",           "unit": "$",      "symbol": "R",        "icon": "💰"},
-    "IntRate":      {"label": "Interest rate",           "unit": "%",      "symbol": "i",        "icon": "📈"},
-    "Electax":      {"label": "Electricity tax",         "unit": "¢/kWh",  "symbol": "τ_e",      "icon": "⚡"},
-    "Fueltax":      {"label": "Fuel tax",                "unit": "$/GJ",   "symbol": "τ_f",      "icon": "⛽"},
+    "Loan":         {"label": "Loan amount",              "unit": "$",     "symbol": "L",       "icon": "🏦"},
+    "Rebate":       {"label": "Rebate amount",            "unit": "$",     "symbol": "R",       "icon": "💰"},
+    "IntRate":      {"label": "Interest rate",            "unit": "%",     "symbol": "i",       "icon": "📈"},
+    "Electax":      {"label": "Electricity tax",          "unit": "¢/kWh", "symbol": "τ_e",     "icon": "⚡"},
+    "Fueltax":      {"label": "Fuel tax",                 "unit": "$/GJ",  "symbol": "τ_f",     "icon": "⛽"},
 }
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
@@ -179,9 +233,6 @@ try:
 except FileNotFoundError:
     model_ok = False
 
-# ─────────────────────────────────────────
-# SESSION STATE
-# ─────────────────────────────────────────
 if "selected_city" not in st.session_state:
     st.session_state.selected_city = None
 
@@ -195,13 +246,10 @@ if not model_ok:
 st.markdown("---")
 
 # ─────────────────────────────────────────
-# LAYOUT: MAP | CONTROLS
+# MAP | CONTROLS
 # ─────────────────────────────────────────
 map_col, ctrl_col = st.columns([1.6, 1], gap="large")
 
-# ══════════════════════════════════════════
-# MAP
-# ══════════════════════════════════════════
 with map_col:
     st.markdown('<div class="section-label">Select city — click a marker</div>',
                 unsafe_allow_html=True)
@@ -214,9 +262,9 @@ with map_col:
     for city_name, (lat, lon) in CITIES.items():
         is_sel = (city_name == selected)
         if is_sel:
-            folium.CircleMarker(location=[lat, lon], radius=18,
-                                color="#1d4ed8", fill=True,
-                                fill_color="#bfdbfe", fill_opacity=0.4,
+            folium.CircleMarker(location=[lat, lon], radius=20,
+                                color="#0a0a0a", fill=True,
+                                fill_color="#c9d4e0", fill_opacity=0.5,
                                 weight=2).add_to(m)
         folium.Marker(
             location=[lat, lon],
@@ -224,15 +272,15 @@ with map_col:
             popup=folium.Popup(city_name, max_width=120),
             icon=folium.DivIcon(
                 html=f"""<div style="
-                    background:{'#1d4ed8' if is_sel else '#ffffff'};
-                    color:{'#ffffff' if is_sel else '#1e293b'};
-                    border:2px solid {'#1d4ed8' if is_sel else '#94a3b8'};
-                    border-radius:50%;width:30px;height:30px;
+                    background:{'#0a0a0a' if is_sel else '#ffffff'};
+                    color:{'#ffffff' if is_sel else '#0a0a0a'};
+                    border:2px solid {'#0a0a0a' if is_sel else '#64748b'};
+                    border-radius:50%;width:32px;height:32px;
                     display:flex;align-items:center;justify-content:center;
-                    font-size:11px;font-weight:700;font-family:sans-serif;
-                    box-shadow:0 2px 6px rgba(0,0,0,0.15);cursor:pointer;
+                    font-size:11px;font-weight:800;font-family:sans-serif;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.18);cursor:pointer;
                 ">{city_name[:2]}</div>""",
-                icon_size=(30, 30), icon_anchor=(15, 15),
+                icon_size=(32, 32), icon_anchor=(16, 16),
             ),
         ).add_to(m)
 
@@ -246,15 +294,15 @@ with map_col:
     if selected:
         lat, lon = CITIES[selected]
         st.markdown(
-            f'<div class="city-selected">📍 {selected} &nbsp;'
-            f'<span style="font-size:13px;font-weight:400;color:#3b82f6;">'
+            f'<div class="city-selected">📍 {selected} &nbsp;&nbsp;'
+            f'<span style="font-size:13px;font-weight:600;color:#c9d4e0;">'
             f'{lat:.2f}°N, {abs(lon):.2f}°W</span></div>',
             unsafe_allow_html=True)
     else:
         st.markdown('<div class="city-prompt">👆 Click a city marker on the map</div>',
                     unsafe_allow_html=True)
 
-    st.markdown('<div class="section-label" style="margin-top:8px;">Or click a name</div>',
+    st.markdown('<div class="section-label" style="margin-top:10px;">Or click a name</div>',
                 unsafe_allow_html=True)
     btn_cols = st.columns(5)
     for i, city_name in enumerate(CITIES):
@@ -265,9 +313,6 @@ with map_col:
                 st.session_state.selected_city = city_name
                 st.rerun()
 
-# ══════════════════════════════════════════
-# CONTROLS
-# ══════════════════════════════════════════
 with ctrl_col:
     st.markdown('<div class="section-label">Building parameters</div>', unsafe_allow_html=True)
     footprint = st.number_input("Building footprint (m²)", value=130, min_value=30, max_value=2000, step=10)
@@ -344,50 +389,49 @@ if run and selected:
         df_sorted = df.sort_values("Score", ascending=False).reset_index(drop=True)
         best = df_sorted.iloc[0]
 
-    # ── Top metrics ───────────────────────────────
+    # ── Metric cards ──────────────────────────────
     st.markdown("---")
     st.success(f"✅ Best retrofit found for **{city}** under **{ssp}** from {n_samples:,} candidates")
 
     m1, m2, m3, m4 = st.columns(4)
-    #m1.metric("Composite score", f"{best['Score']:.4f}")
+    m1.metric("Composite score", f"{best['Score']:.4f}")
     m2.metric("GHG reduction",   f"{best['GHG']:.1f} tCO₂e/yr")
     m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
     m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
 
-    net_cost = max(float(best["Loan"]) - float(best["Rebate"]), 0)
-    annual   = max(float(best["Owner"]) / 25, 1)
-    #payback  = round(net_cost / annual)
-    #st.caption(f"⏱️ Estimated payback: **{payback if payback > 0 else '< 1'} years** "
-               #f"(net cost ${net_cost:,.0f} ÷ ~${annual:,.0f}/yr)")
-
     st.markdown("---")
 
     # ─────────────────────────────────────────────
-    # RESULTS: TWO GROUPS SIDE BY SIDE
+    # VARIABLE CARD RENDERER
     # ─────────────────────────────────────────────
-    def var_card_html(k, meta, best_val, lo, hi, card_class, bar_color):
-        pct  = round((best_val - lo) / (hi - lo + 1e-9) * 100)
-        # Format value
-        if k in ("Loan", "Rebate"):
+    def var_card(k, meta, best_val, is_economic=False):
+        lo_v, hi_v = RANGES[k]
+        pct = round((best_val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
+
+        if k in ("Loan", "Rebate") or meta["unit"] == "$":
             val_str = f"${best_val:,.0f}"
         elif meta["unit"] == "%":
-            val_str = f"{best_val:.2f} %"
-        elif meta["unit"] == "$":
-            val_str = f"${best_val:,.0f}"
+            val_str = f"{best_val:.2f}%"
         else:
-            val_str = f"{best_val:.3f}"
-        range_str = f"Range: {lo} – {hi} {meta['unit']}"
+            val_str = f"{best_val:.3f} {meta['unit'] if meta['unit'] != '—' else ''}"
+
+        range_str = f"{lo_v} – {hi_v}"
+        if meta["unit"] not in ("—", "$", "%"):
+            range_str += f" {meta['unit']}"
+
+        icon_class   = "var-icon-economic" if is_economic else "var-icon-building"
+        symbol_class = "var-symbol var-symbol-econ" if is_economic else "var-symbol"
+        bar_color    = "#78350f" if is_economic else "#1a1a2e"
 
         return f"""
         <div class="var-card">
-          <div class="var-icon {card_class}">{meta['icon']}</div>
+          <div class="var-icon {icon_class}">{meta['icon']}</div>
           <div class="var-info">
             <div class="var-label">
-              <code style="font-size:10px;background:#f1f5f9;padding:1px 4px;border-radius:4px;color:#6366f1;">{meta['symbol']}</code>
-              &nbsp;{meta['label']}
+              <span class="{symbol_class}">{meta['symbol']}</span>{meta['label']}
             </div>
             <div class="var-value">{val_str}</div>
-            <div class="var-range">{range_str}</div>
+            <div class="var-range">Range: {range_str}</div>
           </div>
           <div class="bar-wrap">
             <div class="bar-track">
@@ -397,64 +441,49 @@ if run and selected:
           </div>
         </div>"""
 
+    # ── Two result columns ─────────────────────────
     col_build, col_econ = st.columns(2, gap="large")
 
-    # ── Building features ─────────────────────────
     with col_build:
-        st.markdown(
-            '<div class="result-group-title">🏗️ Building features</div>',
-            unsafe_allow_html=True)
-        cards_html = ""
-        for k, meta in BUILDING_VARS.items():
-            lo_v, hi_v = RANGES[k]
-            cards_html += var_card_html(k, meta, float(best[k]),
-                                        lo_v, hi_v,
-                                        "var-icon-building", "#3266ad")
-        st.markdown(cards_html, unsafe_allow_html=True)
+        st.markdown('<div class="result-group-title">🏗️ Building features</div>',
+                    unsafe_allow_html=True)
+        html = "".join(
+            var_card(k, meta, float(best[k]), is_economic=False)
+            for k, meta in BUILDING_VARS.items()
+        )
+        st.markdown(html, unsafe_allow_html=True)
 
-    # ── Economic parameters ───────────────────────
     with col_econ:
-        st.markdown(
-            '<div class="result-group-title">💰 Economic parameters</div>',
-            unsafe_allow_html=True)
-        cards_html = ""
-        for k, meta in ECONOMIC_VARS.items():
-            lo_v, hi_v = RANGES[k]
-            cards_html += var_card_html(k, meta, float(best[k]),
-                                        lo_v, hi_v,
-                                        "var-icon-economic", "#d97706")
-        st.markdown(cards_html, unsafe_allow_html=True)
-        '''
-        # Payback card inside economic panel
-        st.markdown(f"""
-        <div class="var-card" style="border-color:#bfdbfe;background:#eff6ff;">
-          <div class="var-icon" style="background:#dbeafe;font-size:22px;">⏱️</div>
-          <div class="var-info">
-            <div class="var-label"><code style="font-size:10px;background:#dbeafe;padding:1px 4px;border-radius:4px;color:#6366f1;">PB</code>&nbsp;Payback period</div>
-            <div class="var-value" style="color:#1d4ed8;">{payback if payback > 0 else '< 1'} years</div>
-            <div class="var-range">Net cost ${net_cost:,.0f} ÷ ~${annual:,.0f}/yr</div>
-          </div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
+                    unsafe_allow_html=True)
+        html = "".join(
+            var_card(k, meta, float(best[k]), is_economic=True)
+            for k, meta in ECONOMIC_VARS.items()
+        )
+        st.markdown(html, unsafe_allow_html=True)
 
     st.markdown("---")
-    '''
-    # ─────────────────────────────────────────────
-    # CHARTS ROW
-    # ─────────────────────────────────────────────
+
+    # ── Charts ────────────────────────────────────
     ch1, ch2, ch3 = st.columns(3, gap="small")
 
     with ch1:
         fig_hist = px.histogram(df, x="Score", nbins=40,
-                                color_discrete_sequence=["#3266ad"],
+                                color_discrete_sequence=["#1a1a2e"],
                                 title="Score distribution")
         fig_hist.add_vline(x=best["Score"], line_dash="dash",
-                           line_color="#D85A30",
-                           annotation_text="Best", annotation_font_size=10)
-        fig_hist.update_layout(margin=dict(t=35,b=10,l=10,r=10), height=220,
-                               showlegend=False,
-                               plot_bgcolor="white", paper_bgcolor="white",
-                               xaxis=dict(showgrid=False, title=""),
-                               yaxis=dict(showgrid=False, title=""))
+                           line_color="#b91c1c",
+                           annotation_text="Best",
+                           annotation_font_size=12,
+                           annotation_font_color="#b91c1c")
+        fig_hist.update_layout(
+            margin=dict(t=40,b=10,l=10,r=10), height=230,
+            showlegend=False, plot_bgcolor="white", paper_bgcolor="white",
+            font=dict(color="#0a0a0a", size=12),
+            title=dict(font=dict(size=14, color="#0a0a0a")),
+            xaxis=dict(showgrid=False, title="", tickfont=dict(size=11, color="#0a0a0a")),
+            yaxis=dict(showgrid=False, title="", tickfont=dict(size=11, color="#0a0a0a")),
+        )
         st.plotly_chart(fig_hist, use_container_width=True)
 
     with ch2:
@@ -462,32 +491,47 @@ if run and selected:
             r=[best["Owner_n"], best["Gov_n"], best["GHG_n"], best["Owner_n"]],
             theta=["Owner savings","Gov savings","GHG reduction","Owner savings"],
             fill="toself",
-            fillcolor="rgba(50,102,173,0.15)",
-            line=dict(color="#3266ad", width=2),
+            fillcolor="rgba(26,26,46,0.12)",
+            line=dict(color="#1a1a2e", width=2.5),
         ))
         fig_radar.update_layout(
-            polar=dict(radialaxis=dict(range=[0,1], showticklabels=False,
-                                       gridcolor="#f3f4f6")),
-            margin=dict(t=30,b=20,l=40,r=40), height=220,
+            polar=dict(
+                radialaxis=dict(range=[0,1], showticklabels=False,
+                                gridcolor="#c9d4e0", linecolor="#c9d4e0"),
+                angularaxis=dict(
+                    tickfont=dict(size=12, color="#0a0a0a"),
+                    gridcolor="#c9d4e0",
+                ),
+            ),
+            margin=dict(t=40,b=20,l=50,r=50), height=230,
             paper_bgcolor="white",
-            title=dict(text="Objective profile", font_size=12),
+            font=dict(color="#0a0a0a"),
+            title=dict(text="Objective profile", font=dict(size=14, color="#0a0a0a")),
         )
         st.plotly_chart(fig_radar, use_container_width=True)
 
     with ch3:
         sample_plot = df.sample(min(400, len(df)), random_state=1)
-        fig_par = px.scatter(sample_plot, x="Owner", y="GHG",
-                             color="Score", color_continuous_scale="Blues",
-                             opacity=0.5, title="Pareto space",
-                             labels={"Owner":"Owner ($)","GHG":"GHG (tCO₂e/yr)"})
+        fig_par = px.scatter(
+            sample_plot, x="Owner", y="GHG",
+            color="Score", color_continuous_scale=["#e2e8f0","#1a1a2e"],
+            opacity=0.6, title="Pareto space",
+            labels={"Owner":"Owner savings ($)","GHG":"GHG (tCO₂e/yr)"},
+        )
         fig_par.add_scatter(
             x=[best["Owner"]], y=[best["GHG"]], mode="markers",
-            marker=dict(size=14, color="#D85A30", symbol="star"),
+            marker=dict(size=14, color="#b91c1c", symbol="star"),
             name="Best", showlegend=False,
         )
-        fig_par.update_layout(margin=dict(t=35,b=10,l=10,r=10), height=220,
-                              plot_bgcolor="white", paper_bgcolor="white",
-                              coloraxis_showscale=False)
+        fig_par.update_layout(
+            margin=dict(t=40,b=10,l=10,r=10), height=230,
+            plot_bgcolor="white", paper_bgcolor="white",
+            coloraxis_showscale=False,
+            font=dict(color="#0a0a0a", size=12),
+            title=dict(font=dict(size=14, color="#0a0a0a")),
+            xaxis=dict(showgrid=False, tickfont=dict(size=11, color="#0a0a0a")),
+            yaxis=dict(showgrid=False, tickfont=dict(size=11, color="#0a0a0a")),
+        )
         st.plotly_chart(fig_par, use_container_width=True)
 
     # ── Sensitivity ───────────────────────────────
@@ -501,30 +545,40 @@ if run and selected:
             corrs[k] = abs(num/den)
         corr_sorted = dict(sorted(corrs.items(), key=lambda x: x[1], reverse=True))
 
-        labels = []
+        y_labels, bar_colors = [], []
         for k in corr_sorted:
             if k in ALL_VARS:
                 meta = ALL_VARS[k]
-                labels.append(f"{meta['icon']} {meta['symbol']} — {meta['label']}")
+                y_labels.append(f"{meta['icon']}  {meta['symbol']}  —  {meta['label']}")
+                bar_colors.append("#78350f" if k in ECONOMIC_VARS else "#1a1a2e")
             else:
-                labels.append(k)
+                y_labels.append(k)
+                bar_colors.append("#1a1a2e")
 
         fig_sens = go.Figure(go.Bar(
             x=list(corr_sorted.values()),
-            y=labels,
+            y=y_labels,
             orientation="h",
-            marker_color=["#3266ad" if k in BUILDING_VARS else "#d97706"
-                          for k in corr_sorted],
+            marker_color=bar_colors,
             marker_line_width=0,
         ))
         fig_sens.update_layout(
-            margin=dict(t=10,b=10,l=10,r=10), height=440,
+            margin=dict(t=10,b=10,l=10,r=20), height=450,
             plot_bgcolor="white", paper_bgcolor="white",
-            xaxis=dict(showgrid=False, title="|correlation with score|"),
-            yaxis=dict(showgrid=False),
+            font=dict(color="#0a0a0a", size=12),
+            xaxis=dict(showgrid=False,
+                       title="|Correlation with composite score|",
+                       title_font=dict(size=13, color="#0a0a0a"),
+                       tickfont=dict(size=11, color="#0a0a0a")),
+            yaxis=dict(showgrid=False,
+                       tickfont=dict(size=12, color="#0a0a0a")),
         )
         st.plotly_chart(fig_sens, use_container_width=True)
-        st.caption("🔵 Blue = building feature &nbsp;&nbsp; 🟡 Amber = economic parameter")
+        st.markdown(
+            "⬛ **Dark** = building feature &nbsp;&nbsp;&nbsp; "
+            "🟫 **Brown** = economic parameter",
+            unsafe_allow_html=False,
+        )
 
     # ── Top 10 ────────────────────────────────────
     with st.expander("🏆 Top 10 candidates"):
