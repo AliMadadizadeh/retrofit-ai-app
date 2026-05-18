@@ -95,7 +95,7 @@ RANGES = {
 }
 
 PARAM_LABELS = {
-    "V_bites":      "Vegetation cover",
+    "V_bites":      "VBuilding Integrated Thermal Energy Storage (BITES) system",
     "Albedo_roof":  "Roof albedo",
     "A_ST":         "Solar thermal area",
     "Rvalue_roof":  "Roof R-value (m²K/W)",
