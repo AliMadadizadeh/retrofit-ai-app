@@ -349,16 +349,16 @@ if run and selected:
     st.success(f"✅ Best retrofit found for **{city}** under **{ssp}** from {n_samples:,} candidates")
 
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Composite score", f"{best['Score']:.4f}")
+    #m1.metric("Composite score", f"{best['Score']:.4f}")
     m2.metric("GHG reduction",   f"{best['GHG']:.1f} tCO₂e/yr")
     m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
     m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
 
     net_cost = max(float(best["Loan"]) - float(best["Rebate"]), 0)
     annual   = max(float(best["Owner"]) / 25, 1)
-    payback  = round(net_cost / annual)
-    st.caption(f"⏱️ Estimated payback: **{payback if payback > 0 else '< 1'} years** "
-               f"(net cost ${net_cost:,.0f} ÷ ~${annual:,.0f}/yr)")
+    #payback  = round(net_cost / annual)
+    #st.caption(f"⏱️ Estimated payback: **{payback if payback > 0 else '< 1'} years** "
+               #f"(net cost ${net_cost:,.0f} ÷ ~${annual:,.0f}/yr)")
 
     st.markdown("---")
 
@@ -424,7 +424,7 @@ if run and selected:
                                         lo_v, hi_v,
                                         "var-icon-economic", "#d97706")
         st.markdown(cards_html, unsafe_allow_html=True)
-
+        '''
         # Payback card inside economic panel
         st.markdown(f"""
         <div class="var-card" style="border-color:#bfdbfe;background:#eff6ff;">
@@ -437,7 +437,7 @@ if run and selected:
         </div>""", unsafe_allow_html=True)
 
     st.markdown("---")
-
+    '''
     # ─────────────────────────────────────────────
     # CHARTS ROW
     # ─────────────────────────────────────────────
