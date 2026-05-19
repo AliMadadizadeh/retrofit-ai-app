@@ -179,10 +179,10 @@ RANGES = {
     "V_bites":      (0.05, 0.25),
     "Albedo_roof":  (0.10, 0.70),
     "A_ST":         (0.10, 0.60),
-    "Rvalue_roof":  (4.41, 14.0),
+    "Rvalue_roof":  (5.46, 11.0),
     "Loan":         (0,    10000),   # was (0, 50000) — swapped with Rebate
     "Rebate":       (20000, 50000),  # was (0, 10000) — swapped with Loan
-    "Rvalue_wall":  (3.17,  11.00),
+    "Rvalue_wall":  (3.60,  8.00),
     "Glazing":      (0.10,  0.40),
     "IntRate":      (0.25,  1.50),   # was (0.75, 5.00) — corrected to dataset range
     "Infiltration": (0.50,  1.50),
@@ -551,154 +551,89 @@ if run and selected:
         )
         st.plotly_chart(fig_par, use_container_width=True)
 
-    # Sensitivity - data-driven binning on real dataset rows
-    with st.expander("📊 Sensitivity — which variables drive the score?"):
+    # ── Recommended Retrofits ─────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown('<div class="result-group-title">🔧 Recommended Retrofits</div>',
+                unsafe_allow_html=True)
+    st.caption(
+        "Parameters where the optimal value exceeds 50% of the design range — "
+        "these are the upgrades worth investing in for this scenario."
+    )
 
-        st.caption(
-            "Computed directly from real simulation data for this city and SSP — "
-            "no model extrapolation. Each parameter is divided into bins; the curve "
-            "shows the mean composite score per bin, everything else varying naturally."
-        )
+    SKIP_KEYS = {"Glazing", "Infiltration"}
 
-        city_data = DATASET[
-            (DATASET["City"] == city) &
-            (DATASET["SSP"]  == ssp)
-        ].copy()
+    RETROFIT_LABELS = {
+        "Rvalue_roof":  ("Upgrade roof insulation",      "Higher R-value reduces heat loss through the roof"),
+        "Rvalue_wall":  ("Upgrade wall insulation",      "Higher R-value reduces heat loss through exterior walls"),
+        "SHGC":         ("Install high-SHGC glazing",    "Higher solar heat gain reduces heating demand"),
+        "Albedo_roof":  ("Apply cool roof coating",      "Higher albedo reflects solar radiation and reduces cooling load"),
+        "A_PV":         ("Install solar PV system",      "Larger PV area generates more on-site electricity"),
+        "A_ST":         ("Install solar thermal system", "Larger collector area provides more domestic hot water"),
+        "V_bites":      ("Install BITES system",         "Thermal energy storage reduces peak demand"),
+        "Loan":         ("Apply for retrofit loan",      "Financing helps offset upfront installation costs"),
+        "Rebate":       ("Claim available rebates",      "Government rebates significantly reduce net cost"),
+        "IntRate":      ("Secure low interest rate",     "Lower financing cost improves payback period"),
+        "Electax":      ("Account for electricity tax",  "Higher electricity tax increases savings from efficiency"),
+        "Fueltax":      ("Account for fuel tax",         "Higher fuel tax increases savings from fuel switching"),
+    }
 
-        if city_data.empty:
-            st.warning("No data rows for this city / SSP combination.")
-        else:
-            # Compute composite score on every real row
-            ghg_min = float(city_data["TotalCO2Sav"].min())
-            ghg_rng = float(city_data["TotalCO2Sav"].max() - ghg_min) + 1e-9
-            own_min = float(city_data["CostAnnualSysSave_CAD"].min())
-            own_rng = float(city_data["CostAnnualSysSave_CAD"].max() - own_min) + 1e-9
-            gov_min = float(city_data["AnnGovtCostSav_CAD"].min())
-            gov_rng = float(city_data["AnnGovtCostSav_CAD"].max() - gov_min) + 1e-9
+    recommendations = []
+    for k in list(BUILDING_VARS.keys()) + list(ECONOMIC_VARS.keys()):
+        if k in SKIP_KEYS:
+            continue
+        lo_v, hi_v = RANGES[k]
+        val        = float(best[k])
+        pct        = (val - lo_v) / (hi_v - lo_v + 1e-9)
+        if pct > 0.50:
+            recommendations.append((k, val, pct))
 
-            city_data["_Score"] = (
-                w_owner * (city_data["CostAnnualSysSave_CAD"] - own_min) / own_rng +
-                w_gov   * (city_data["AnnGovtCostSav_CAD"]   - gov_min) / gov_rng +
-                w_ghg   * (1 - (city_data["TotalCO2Sav"]     - ghg_min) / ghg_rng)
-            )
+    if not recommendations:
+        st.info("No parameters exceeded 50% of their range in the optimal scenario.")
+    else:
+        # Sort by percentile descending
+        recommendations.sort(key=lambda x: x[2], reverse=True)
 
-            N_BINS = 6
+        # Display in a 2-column grid
+        rec_cols = st.columns(2, gap="large")
+        for i, (k, val, pct) in enumerate(recommendations):
+            meta       = ALL_VARS[k]
+            is_econ    = k in ECONOMIC_VARS
+            action, reason = RETROFIT_LABELS.get(k, (meta["label"], ""))
 
-            def bin_sensitivity(col):
-                try:
-                    bins   = pd.cut(city_data[col], bins=N_BINS, duplicates="drop")
-                    grp    = city_data.groupby(bins, observed=True)["_Score"].agg(["mean","count"])
-                    grp    = grp[grp["count"] >= 2]        # skip near-empty bins
-                    xs     = [float(iv.mid) for iv in grp.index]
-                    ys     = grp["mean"].tolist()
-                    return xs, ys
-                except Exception:
-                    return [], []
-
-            # OAT importance = score range across bins (real data)
-            oat       = {}
-            behaviour = {}
-            sweep_xy  = {}
-            for k in list(RANGES.keys()):
-                xs, ys = bin_sensitivity(k)
-                if len(ys) < 2:
-                    oat[k] = 0.0
-                    behaviour[k] = "flat"
-                    sweep_xy[k]  = (xs, ys)
-                    continue
-                oat[k]       = float(max(ys) - min(ys))
-                sweep_xy[k]  = (xs, ys)
-                peak_idx     = int(np.argmax(ys))
-                is_mono_up   = peak_idx >= len(ys) - 2
-                is_mono_dn   = peak_idx <= 1
-                if is_mono_up:
-                    behaviour[k] = "monotonic_up"
-                elif is_mono_dn:
-                    behaviour[k] = "monotonic_down"
-                else:
-                    behaviour[k] = "sweet_spot"
-
-            # ── Importance bar charts (building + economic side by side) ─────────
-            def make_bar(var_dict, color):
-                subset = {k: oat.get(k, 0) for k in var_dict}
-                subset = dict(sorted(subset.items(), key=lambda x: x[1]))
-                y_labels = [
-                    f"{var_dict[k]['icon']}  {var_dict[k]['symbol']}  —  {var_dict[k]['label']}"
-                    for k in subset
-                ]
-                fig = go.Figure(go.Bar(
-                    x=list(subset.values()), y=y_labels,
-                    orientation="h", marker_color=color, marker_line_width=0,
-                ))
-                fig.update_layout(
-                    margin=dict(t=10, b=10, l=10, r=20), height=320,
-                    plot_bgcolor="white", paper_bgcolor="white",
-                    font=dict(color="#0a0a0a", size=12),
-                    xaxis=dict(showgrid=False,
-                               title="Score range across bins (real data)",
-                               title_font=dict(size=12, color="#0a0a0a"),
-                               tickfont=dict(size=11, color="#0a0a0a")),
-                    yaxis=dict(showgrid=False, tickfont=dict(size=12, color="#0a0a0a")),
-                )
-                return fig
-
-            bc1, bc2 = st.columns(2, gap="large")
-            with bc1:
-                st.markdown('<div class="result-group-title">🏗️ Building parameters</div>',
-                            unsafe_allow_html=True)
-                st.plotly_chart(make_bar(BUILDING_VARS, "#1a1a2e"), use_container_width=True)
-            with bc2:
-                st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
-                            unsafe_allow_html=True)
-                st.plotly_chart(make_bar(ECONOMIC_VARS, "#78350f"), use_container_width=True)
-
-            st.markdown("---")
-
-            # ── Response curve ────────────────────────────────────────────────
-            st.markdown('<div class="result-group-title">📈 Response curve</div>',
-                        unsafe_allow_html=True)
-            st.caption("Pick a parameter to see how the mean composite score responds across its range in the real data.")
-
-            all_keys_sorted = sorted(
-                list(BUILDING_VARS.keys()) + list(ECONOMIC_VARS.keys()),
-                key=lambda k: oat.get(k, 0), reverse=True
-            )
-            chosen = st.selectbox(
-                "Parameter", all_keys_sorted,
-                format_func=lambda k: f"{ALL_VARS[k]['icon']} {ALL_VARS[k]['label']}"
-            )
-
-            xs, ys = sweep_xy[chosen]
-            if len(xs) < 2:
-                st.warning("Not enough binned data to plot this parameter for the selected city / SSP.")
+            if k in ("Loan", "Rebate") or meta["unit"] == "$":
+                val_str = f"${val:,.0f}"
+            elif meta["unit"] == "%":
+                val_str = f"{val:.2f}%"
             else:
-                opt_x = xs[int(np.argmax(ys))]
-                fig_c = go.Figure()
-                fig_c.add_trace(go.Scatter(
-                    x=xs, y=ys, mode="lines+markers",
-                    line=dict(color="#1a1a2e", width=2.5),
-                    marker=dict(size=7, color="#1a1a2e"),
-                ))
-                fig_c.add_vline(
-                    x=opt_x, line_dash="dash", line_color="#b91c1c",
-                    annotation_text=f"Best: {opt_x:.3f}",
-                    annotation_font_color="#b91c1c", annotation_font_size=12,
-                )
-                fig_c.update_layout(
-                    margin=dict(t=20, b=30, l=10, r=20), height=300,
-                    plot_bgcolor="white", paper_bgcolor="white",
-                    font=dict(color="#0a0a0a", size=12),
-                    xaxis=dict(showgrid=False,
-                               title=f"{ALL_VARS[chosen]['label']} ({ALL_VARS[chosen]['unit']})",
-                               tickfont=dict(size=11)),
-                    yaxis=dict(showgrid=False, title="Mean composite score",
-                               tickfont=dict(size=11)),
-                    showlegend=False,
-                )
-                st.plotly_chart(fig_c, use_container_width=True)
-                st.info(f"Best bin centre for {ALL_VARS[chosen]['label']}: **{opt_x:.3f} {ALL_VARS[chosen]['unit']}**")
+                val_str = f"{val:.3f} {meta['unit'] if meta['unit'] != '—' else ''}"
 
-    # ── Top 10 ────────────────────────────────────
+            bar_color  = "#78350f" if is_econ else "#1a1a2e"
+            bg_color   = "#fffbeb" if is_econ else "#f0f6ff"
+            border_col = "#d97706" if is_econ else "#3b82f6"
+
+            card_html = f"""
+            <div style="border:1.5px solid {border_col};border-radius:12px;
+                        padding:14px 16px;background:{bg_color};margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <span style="font-size:22px;">{meta['icon']}</span>
+                <div>
+                  <div style="font-size:13px;font-weight:800;color:#0a0a0a;">{action}</div>
+                  <div style="font-size:11px;color:#64748b;">{meta['label']}  ·  
+                    <span style="font-family:monospace;font-weight:700;color:{bar_color};">{meta['symbol']}</span>
+                  </div>
+                </div>
+              </div>
+              <div style="font-size:20px;font-weight:800;color:#0a0a0a;margin-bottom:4px;">{val_str}</div>
+              <div style="height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-bottom:6px;">
+                <div style="width:{int(pct*100)}%;height:6px;background:{bar_color};border-radius:99px;"></div>
+              </div>
+              <div style="font-size:11px;color:#64748b;">{int(pct*100)}% of design range  ·  {reason}</div>
+            </div>"""
+
+            with rec_cols[i % 2]:
+                st.markdown(card_html, unsafe_allow_html=True)
+
+    # ── Top 10    # ── Top 10 ────────────────────────────────────
     with st.expander("🏆 Top 10 candidates"):
         top10 = df_sorted.head(10)[["Score","GHG","Owner","Gov"]].copy()
         top10["GHG"] = top10["GHG"] / 1000
