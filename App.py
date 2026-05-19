@@ -193,8 +193,8 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "V_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "V_wall",  "icon": "🧱"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "R_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "R_wall",  "icon": "🧱"},
     "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "G",       "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
@@ -413,7 +413,7 @@ if run and selected:
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Composite score", f"{best['Score']:.4f}")
-    m2.metric("GHG reduction",   f"{best['GHG']:.1f} tCO₂e/yr")
+    m2.metric("GHG reduction",   f"{best['GHG'] / 1000:,.1f} tCO₂e over 20 yrs")
     m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
     m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
 
@@ -618,116 +618,94 @@ if run and selected:
                 else:
                     behaviour[k] = "sweet_spot"
 
-            beh_icon = {
-                "monotonic_up":   " 🔼",
-                "monotonic_down": " 🔽",
-                "sweet_spot":     " 🎯",
-                "flat":           " ➖",
-            }
-
-            # ── Tab 1: importance bars  Tab 2: curves ────────────────────────
-            tab_bar, tab_curve = st.tabs(["📊 Importance ranking", "📈 Response curves"])
-
-            with tab_bar:
-                st.markdown(
-                    "🔼 Higher is always better &nbsp;&nbsp; "
-                    "🔽 Lower is always better &nbsp;&nbsp; "
-                    "🎯 Has a sweet spot &nbsp;&nbsp; "
-                    "➖ Flat (little effect)",
-                    unsafe_allow_html=True,
+            # ── Importance bar charts (building + economic side by side) ─────────
+            def make_bar(var_dict, color):
+                subset = {k: oat.get(k, 0) for k in var_dict}
+                subset = dict(sorted(subset.items(), key=lambda x: x[1]))
+                y_labels = [
+                    f"{var_dict[k]['icon']}  {var_dict[k]['symbol']}  —  {var_dict[k]['label']}"
+                    for k in subset
+                ]
+                fig = go.Figure(go.Bar(
+                    x=list(subset.values()), y=y_labels,
+                    orientation="h", marker_color=color, marker_line_width=0,
+                ))
+                fig.update_layout(
+                    margin=dict(t=10, b=10, l=10, r=20), height=320,
+                    plot_bgcolor="white", paper_bgcolor="white",
+                    font=dict(color="#0a0a0a", size=12),
+                    xaxis=dict(showgrid=False,
+                               title="Score range across bins (real data)",
+                               title_font=dict(size=12, color="#0a0a0a"),
+                               tickfont=dict(size=11, color="#0a0a0a")),
+                    yaxis=dict(showgrid=False, tickfont=dict(size=12, color="#0a0a0a")),
                 )
+                return fig
 
-                def make_bar(var_dict, color):
-                    subset = {k: oat.get(k, 0) for k in var_dict}
-                    subset = dict(sorted(subset.items(), key=lambda x: x[1]))
-                    y_labels = [
-                        f"{var_dict[k]['icon']}  {var_dict[k]['symbol']}  —  "
-                        f"{var_dict[k]['label']}{beh_icon.get(behaviour.get(k, ''), '')}"
-                        for k in subset
-                    ]
-                    fig = go.Figure(go.Bar(
-                        x=list(subset.values()), y=y_labels,
-                        orientation="h", marker_color=color, marker_line_width=0,
-                    ))
-                    fig.update_layout(
-                        margin=dict(t=10, b=10, l=10, r=20), height=320,
-                        plot_bgcolor="white", paper_bgcolor="white",
-                        font=dict(color="#0a0a0a", size=12),
-                        xaxis=dict(showgrid=False,
-                                   title="Score range across bins (real data)",
-                                   title_font=dict(size=12, color="#0a0a0a"),
-                                   tickfont=dict(size=11, color="#0a0a0a")),
-                        yaxis=dict(showgrid=False, tickfont=dict(size=12, color="#0a0a0a")),
-                    )
-                    return fig
+            bc1, bc2 = st.columns(2, gap="large")
+            with bc1:
+                st.markdown('<div class="result-group-title">🏗️ Building parameters</div>',
+                            unsafe_allow_html=True)
+                st.plotly_chart(make_bar(BUILDING_VARS, "#1a1a2e"), use_container_width=True)
+            with bc2:
+                st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
+                            unsafe_allow_html=True)
+                st.plotly_chart(make_bar(ECONOMIC_VARS, "#78350f"), use_container_width=True)
 
-                bc1, bc2 = st.columns(2, gap="large")
-                with bc1:
-                    st.markdown('<div class="result-group-title">🏗️ Building parameters</div>',
-                                unsafe_allow_html=True)
-                    st.plotly_chart(make_bar(BUILDING_VARS, "#1a1a2e"), use_container_width=True)
-                with bc2:
-                    st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
-                                unsafe_allow_html=True)
-                    st.plotly_chart(make_bar(ECONOMIC_VARS, "#78350f"), use_container_width=True)
+            st.markdown("---")
 
-            with tab_curve:
-                st.markdown("Pick a parameter to see how the mean composite score responds across its range in the real data.")
+            # ── Response curve ────────────────────────────────────────────────
+            st.markdown('<div class="result-group-title">📈 Response curve</div>',
+                        unsafe_allow_html=True)
+            st.caption("Pick a parameter to see how the mean composite score responds across its range in the real data.")
 
-                all_keys_sorted = sorted(
-                    list(BUILDING_VARS.keys()) + list(ECONOMIC_VARS.keys()),
-                    key=lambda k: oat.get(k, 0), reverse=True
+            all_keys_sorted = sorted(
+                list(BUILDING_VARS.keys()) + list(ECONOMIC_VARS.keys()),
+                key=lambda k: oat.get(k, 0), reverse=True
+            )
+            chosen = st.selectbox(
+                "Parameter", all_keys_sorted,
+                format_func=lambda k: f"{ALL_VARS[k]['icon']} {ALL_VARS[k]['label']}"
+            )
+
+            xs, ys = sweep_xy[chosen]
+            if len(xs) < 2:
+                st.warning("Not enough binned data to plot this parameter for the selected city / SSP.")
+            else:
+                opt_x = xs[int(np.argmax(ys))]
+                fig_c = go.Figure()
+                fig_c.add_trace(go.Scatter(
+                    x=xs, y=ys, mode="lines+markers",
+                    line=dict(color="#1a1a2e", width=2.5),
+                    marker=dict(size=7, color="#1a1a2e"),
+                ))
+                fig_c.add_vline(
+                    x=opt_x, line_dash="dash", line_color="#b91c1c",
+                    annotation_text=f"Best: {opt_x:.3f}",
+                    annotation_font_color="#b91c1c", annotation_font_size=12,
                 )
-                chosen = st.selectbox(
-                    "Parameter", all_keys_sorted,
-                    format_func=lambda k: f"{ALL_VARS[k]['icon']} {ALL_VARS[k]['label']}"
+                fig_c.update_layout(
+                    margin=dict(t=20, b=30, l=10, r=20), height=300,
+                    plot_bgcolor="white", paper_bgcolor="white",
+                    font=dict(color="#0a0a0a", size=12),
+                    xaxis=dict(showgrid=False,
+                               title=f"{ALL_VARS[chosen]['label']} ({ALL_VARS[chosen]['unit']})",
+                               tickfont=dict(size=11)),
+                    yaxis=dict(showgrid=False, title="Mean composite score",
+                               tickfont=dict(size=11)),
+                    showlegend=False,
                 )
-
-                xs, ys = sweep_xy[chosen]
-                if len(xs) < 2:
-                    st.warning("Not enough binned data to plot this parameter for the selected city/SSP.")
-                else:
-                    beh     = behaviour[chosen]
-                    opt_x   = xs[int(np.argmax(ys))]
-                    beh_msg = {
-                        "monotonic_up":   "🔼 Monotonic — higher always gives a better score",
-                        "monotonic_down": "🔽 Monotonic — lower always gives a better score",
-                        "sweet_spot":     "🎯 Sweet spot — score peaks at an intermediate value",
-                        "flat":           "➖ Flat — this parameter has little effect on the score",
-                    }[beh]
-
-                    fig_c = go.Figure()
-                    fig_c.add_trace(go.Scatter(
-                        x=xs, y=ys, mode="lines+markers",
-                        line=dict(color="#1a1a2e", width=2.5),
-                        marker=dict(size=7, color="#1a1a2e"),
-                    ))
-                    fig_c.add_vline(
-                        x=opt_x, line_dash="dash", line_color="#b91c1c",
-                        annotation_text=f"Best bin: {opt_x:.3f}",
-                        annotation_font_color="#b91c1c", annotation_font_size=12,
-                    )
-                    fig_c.update_layout(
-                        margin=dict(t=20, b=30, l=10, r=20), height=300,
-                        plot_bgcolor="white", paper_bgcolor="white",
-                        font=dict(color="#0a0a0a", size=12),
-                        xaxis=dict(showgrid=False,
-                                   title=f"{ALL_VARS[chosen]['label']} ({ALL_VARS[chosen]['unit']})",
-                                   tickfont=dict(size=11)),
-                        yaxis=dict(showgrid=False, title="Mean composite score",
-                                   tickfont=dict(size=11)),
-                        showlegend=False,
-                    )
-                    st.plotly_chart(fig_c, use_container_width=True)
-                    st.info(f"{beh_msg}  |  Best bin centre: **{opt_x:.3f}**")
+                st.plotly_chart(fig_c, use_container_width=True)
+                st.info(f"Best bin centre for {ALL_VARS[chosen]['label']}: **{opt_x:.3f} {ALL_VARS[chosen]['unit']}**")
 
     # ── Top 10 ────────────────────────────────────
     with st.expander("🏆 Top 10 candidates"):
         top10 = df_sorted.head(10)[["Score","GHG","Owner","Gov"]].copy()
+        top10["GHG"] = top10["GHG"] / 1000
         top10.index = range(1, 11)
-        top10.columns = ["Score","GHG (tCO₂e/yr)","Owner ($)","Gov ($)"]
+        top10.columns = ["Score","CO₂ saved (tCO₂e)","Owner ($)","Gov ($)"]
         st.dataframe(
-            top10.style.format({"Score":"{:.4f}","GHG (tCO₂e/yr)":"{:.2f}",
+            top10.style.format({"Score":"{:.4f}","CO₂ saved (tCO₂e)":"{:,.1f}",
                                 "Owner ($)":"${:,.0f}","Gov ($)":"${:,.0f}"}),
             use_container_width=True,
         )
