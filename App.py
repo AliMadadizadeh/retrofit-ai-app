@@ -179,10 +179,10 @@ RANGES = {
     "V_bites":      (0.05, 0.25),
     "Albedo_roof":  (0.10, 0.70),
     "A_ST":         (0.10, 0.60),
-    "Rvalue_roof":  (5.46, 11.0),
+    "Rvalue_roof":  (4.41, 14.0),
     "Loan":         (0,    10000),   # was (0, 50000) — swapped with Rebate
     "Rebate":       (20000, 50000),  # was (0, 10000) — swapped with Loan
-    "Rvalue_wall":  (3.60,  8.00),
+    "Rvalue_wall":  (3.17,  11.00),
     "Glazing":      (0.10,  0.40),
     "IntRate":      (0.25,  1.50),   # was (0.75, 5.00) — corrected to dataset range
     "Infiltration": (0.50,  1.50),
