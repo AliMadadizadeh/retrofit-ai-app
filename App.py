@@ -193,9 +193,9 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "R_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "R_wall",  "icon": "🧱"},
-    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "GR",       "icon": "🪟"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "V_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "V_wall",  "icon": "🧱"},
+    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "G",       "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
     "Albedo_roof":  {"label": "Roof albedo",              "unit": "—",     "symbol": "α",       "icon": "☀️"},
@@ -646,7 +646,7 @@ if run and selected:
             st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
                         unsafe_allow_html=True)
             st.plotly_chart(
-                make_chart(ECONOMIC_VARS, "#78350f", ""),
+                make_oat_chart(ECONOMIC_VARS, "#78350f"),
                 use_container_width=True,
             )
 
