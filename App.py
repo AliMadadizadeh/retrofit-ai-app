@@ -180,9 +180,9 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "R_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "R_wall",  "icon": "🧱"},
-    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "GR",       "icon": "🪟"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "V_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "V_wall",  "icon": "🧱"},
+    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "G",       "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
     "Albedo_roof":  {"label": "Roof albedo",              "unit": "—",     "symbol": "α",       "icon": "☀️"},
@@ -195,8 +195,8 @@ ECONOMIC_VARS = {
     "Loan":         {"label": "Loan amount",              "unit": "$",     "symbol": "L",       "icon": "🏦"},
     "Rebate":       {"label": "Rebate amount",            "unit": "$",     "symbol": "R",       "icon": "💰"},
     "IntRate":      {"label": "Interest rate",            "unit": "%",     "symbol": "i",       "icon": "📈"},
-    "Electax":      {"label": "Electricity tax",          "unit": "%", "symbol": "τ_e",     "icon": "⚡"},
-    "Fueltax":      {"label": "Fuel tax",                 "unit": "%",  "symbol": "τ_f",     "icon": "⛽"},
+    "Electax":      {"label": "Electricity tax",          "unit": "¢/kWh", "symbol": "τ_e",     "icon": "⚡"},
+    "Fueltax":      {"label": "Fuel tax",                 "unit": "$/GJ",  "symbol": "τ_f",     "icon": "⛽"},
 }
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
@@ -209,14 +209,13 @@ MODEL_DIR = "city_models"  # folder containing <City>_model.pkl and <City>_colum
 
 @st.cache_resource
 def load_city_models():
-    """Load all per-city models into a dict: {city: (model, columns)}."""
+    """Load all per-city RBF bundles: {city: {rbf, scaler, columns}}."""
     models = {}
     missing = []
     for city in CITIES:
         try:
-            m = joblib.load(f"{MODEL_DIR}/{city}_model.pkl")
-            c = joblib.load(f"{MODEL_DIR}/{city}_columns.pkl")
-            models[city] = (m, c)
+            bundle = joblib.load(f"{MODEL_DIR}/{city}_rbf.pkl")
+            models[city] = bundle   # keys: rbf, scaler, columns
         except FileNotFoundError:
             missing.append(city)
     return models, missing
@@ -370,8 +369,11 @@ with ctrl_col:
 if run and selected:
     city = selected
 
-    # ── CHANGED: pick the city-specific model and its column list ─────────────
-    model, model_columns = city_models[city]
+    # ── Pick the city-specific RBF bundle ────────────────────────────────────
+    bundle         = city_models[city]
+    rbf_model      = bundle["rbf"]
+    rbf_scaler     = bundle["scaler"]
+    model_columns  = bundle["columns"]
 
     keys = list(RANGES.keys())
     lo   = np.array([RANGES[k][0] for k in keys])
@@ -392,11 +394,12 @@ if run and selected:
         df["ElectricityInflationRate"]   = elec_inf
         df["FuelInflationRate"]          = fuel_inf
 
-    with st.spinner(f"Running {city} model…"):
-        # ── CHANGED: only one-hot encode SSP (City removed) ───────────────────
+    with st.spinner(f"Running {city} RBF interpolation…"):
+        # One-hot encode SSP, align columns, scale, then interpolate
         X = pd.get_dummies(df, columns=["SSP"])
-        X = X.reindex(columns=model_columns, fill_value=0)
-        pred = model.predict(X)
+        X = X.reindex(columns=model_columns, fill_value=0).values.astype(float)
+        X_sc = rbf_scaler.transform(X)
+        pred = rbf_model(X_sc)   # RBFInterpolator uses __call__, not .predict()
 
         df["GHG"]   = pred[:, 3]   # TotalCO2Sav
         df["Owner"] = pred[:, 2]   # CostAnnualSysSave_CAD
