@@ -1,25 +1,19 @@
 {
   "Calgary": {
     "n_rows": 360,
-    "model_r2": 0.4487,
-    "model_mae": 604.03,
-    "model_rmse": 1122.91,
+    "model_r2_train": 0.9989,
+    "model_r2": 0.6905,
+    "model_mae": 505.56,
+    "model_rmse": 1170.75,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.3832,
-      "TotalEmbodiedCO2_kgCO2": 0.5006,
-      "CostAnnualSysSave_CAD": 0.6258,
-      "TotalCO2Sav": 0.3107,
-      "AnnSCCSav_CAD": 0.308,
-      "BaseCostAnnual_CAD": 0.1891,
-      "PercentCostSysSav_percent": 0.6021,
-      "AnnGovtCostSav_CAD": 0.6698
-    },
-    "top5_features": {
-      "SHGC": 0.3674,
-      "Rvalue_roof": 0.281,
-      "V_bites": 0.056,
-      "Rebate": 0.0391,
-      "Electax": 0.0257
+      "TotalOperationalCO2Save_kgCO2": 0.2596,
+      "TotalEmbodiedCO2_kgCO2": 0.9993,
+      "CostAnnualSysSave_CAD": 0.9213,
+      "TotalCO2Sav": 0.2463,
+      "AnnSCCSav_CAD": 0.2451,
+      "BaseCostAnnual_CAD": 0.9423,
+      "PercentCostSysSav_percent": 0.9108,
+      "AnnGovtCostSav_CAD": 0.999
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -71,115 +65,6 @@
         "max": -1191.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.1632,
-        "std": 0.0912,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.4044,
-        "std": 0.2035,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3408,
-        "std": 0.1668,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 6.3144,
-        "std": 0.4036,
-        "min": 6.17,
-        "max": 11.17
-      },
-      "Loan": {
-        "mean": 3955.5556,
-        "std": 3566.8268,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30847.2222,
-        "std": 9384.4827,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.8461,
-        "std": 0.2197,
-        "min": 4.76,
-        "max": 6.26
-      },
-      "Glazing": {
-        "mean": 0.2507,
-        "std": 0.0988,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8972,
-        "std": 0.4196,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0125,
-        "std": 0.3563,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 4.9889,
-        "std": 3.3513,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.685,
-        "std": 0.0483,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 5.0778,
-        "std": 3.4423,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.6,
-        "std": 0.0,
-        "min": 0.6,
-        "max": 0.6
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -201,29 +86,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Halifax": {
     "n_rows": 360,
-    "model_r2": 0.3897,
-    "model_mae": 844.22,
-    "model_rmse": 1668.67,
+    "model_r2_train": 0.996,
+    "model_r2": 0.5811,
+    "model_mae": 734.02,
+    "model_rmse": 1745.42,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.0554,
-      "TotalEmbodiedCO2_kgCO2": 0.198,
-      "CostAnnualSysSave_CAD": 0.6592,
-      "TotalCO2Sav": 0.073,
-      "AnnSCCSav_CAD": 0.0736,
-      "BaseCostAnnual_CAD": 0.8501,
-      "PercentCostSysSav_percent": 0.5798,
-      "AnnGovtCostSav_CAD": 0.6286
-    },
-    "top5_features": {
-      "Rebate": 0.0983,
-      "FuelInflationRate": 0.0856,
-      "Glazing": 0.0852,
-      "Electax": 0.0814,
-      "Albedo_roof": 0.0787
+      "TotalOperationalCO2Save_kgCO2": -0.1244,
+      "TotalEmbodiedCO2_kgCO2": 0.9994,
+      "CostAnnualSysSave_CAD": 0.9403,
+      "TotalCO2Sav": 0.0044,
+      "AnnSCCSav_CAD": 0.0078,
+      "BaseCostAnnual_CAD": 0.8797,
+      "PercentCostSysSav_percent": 0.9431,
+      "AnnGovtCostSav_CAD": 0.9988
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -275,115 +159,6 @@
         "max": -1207.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.233,
-        "std": 0.0376,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.3939,
-        "std": 0.1996,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3528,
-        "std": 0.1697,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 5.5586,
-        "std": 0.2545,
-        "min": 5.46,
-        "max": 7.46
-      },
-      "Loan": {
-        "mean": 4238.8889,
-        "std": 3390.736,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30722.2222,
-        "std": 9479.8162,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.1236,
-        "std": 0.1774,
-        "min": 4.05,
-        "max": 4.55
-      },
-      "Glazing": {
-        "mean": 0.2354,
-        "std": 0.0996,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8465,
-        "std": 0.4184,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0222,
-        "std": 0.3464,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 4.7111,
-        "std": 3.3254,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6817,
-        "std": 0.0422,
-        "min": 0.5,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 5.0833,
-        "std": 3.4194,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.6,
-        "std": 0.0,
-        "min": 0.6,
-        "max": 0.6
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -405,29 +180,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Montreal": {
     "n_rows": 359,
-    "model_r2": 0.4102,
-    "model_mae": 1400.59,
-    "model_rmse": 2777.58,
+    "model_r2_train": 0.9966,
+    "model_r2": 0.6862,
+    "model_mae": 1232.96,
+    "model_rmse": 2799.11,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.2564,
-      "TotalEmbodiedCO2_kgCO2": 0.2441,
-      "CostAnnualSysSave_CAD": 0.5782,
-      "TotalCO2Sav": 0.2536,
-      "AnnSCCSav_CAD": 0.2537,
-      "BaseCostAnnual_CAD": 0.6591,
-      "PercentCostSysSav_percent": 0.4748,
-      "AnnGovtCostSav_CAD": 0.5619
-    },
-    "top5_features": {
-      "SSP_SSP585": 0.2181,
-      "Rebate": 0.1086,
-      "A_ST": 0.0849,
-      "Glazing": 0.0774,
-      "Albedo_roof": 0.0711
+      "TotalOperationalCO2Save_kgCO2": 0.2271,
+      "TotalEmbodiedCO2_kgCO2": 0.998,
+      "CostAnnualSysSave_CAD": 0.9455,
+      "TotalCO2Sav": 0.2317,
+      "AnnSCCSav_CAD": 0.2326,
+      "BaseCostAnnual_CAD": 0.8811,
+      "PercentCostSysSav_percent": 0.9744,
+      "AnnGovtCostSav_CAD": 0.9988
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -479,115 +253,6 @@
         "max": -1141.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.0301,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.0301,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.239,
-        "std": 0.0293,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.4156,
-        "std": 0.2034,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3535,
-        "std": 0.1699,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 5.5672,
-        "std": 0.2486,
-        "min": 5.46,
-        "max": 6.46
-      },
-      "Loan": {
-        "mean": 4490.2507,
-        "std": 3279.2372,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30598.8858,
-        "std": 9199.2591,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.1266,
-        "std": 0.1916,
-        "min": 4.05,
-        "max": 5.05
-      },
-      "Glazing": {
-        "mean": 0.2479,
-        "std": 0.1029,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8663,
-        "std": 0.4333,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0125,
-        "std": 0.3489,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 4.9526,
-        "std": 3.2469,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6964,
-        "std": 0.0187,
-        "min": 0.6,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 5.0585,
-        "std": 3.4112,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.1061,
-        "std": 0.0252,
-        "min": 0.1,
-        "max": 0.3
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP585": 120,
-      "SSP245": 119
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -609,29 +274,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Saskatoon": {
     "n_rows": 360,
-    "model_r2": 0.7232,
-    "model_mae": 639.42,
-    "model_rmse": 1908.97,
+    "model_r2_train": 0.9994,
+    "model_r2": 0.9433,
+    "model_mae": 436.79,
+    "model_rmse": 1071.27,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.6152,
-      "TotalEmbodiedCO2_kgCO2": 0.6091,
-      "CostAnnualSysSave_CAD": 0.813,
-      "TotalCO2Sav": 0.7643,
-      "AnnSCCSav_CAD": 0.7656,
-      "BaseCostAnnual_CAD": 0.6982,
-      "PercentCostSysSav_percent": 0.7731,
-      "AnnGovtCostSav_CAD": 0.7474
-    },
-    "top5_features": {
-      "Rvalue_wall": 0.3381,
-      "A_PV": 0.2704,
-      "SHGC": 0.1792,
-      "Rvalue_roof": 0.0346,
-      "Rebate": 0.0257
+      "TotalOperationalCO2Save_kgCO2": 0.8803,
+      "TotalEmbodiedCO2_kgCO2": 0.9599,
+      "CostAnnualSysSave_CAD": 0.9674,
+      "TotalCO2Sav": 0.9159,
+      "AnnSCCSav_CAD": 0.9161,
+      "BaseCostAnnual_CAD": 0.9482,
+      "PercentCostSysSav_percent": 0.964,
+      "AnnGovtCostSav_CAD": 0.9942
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -683,115 +347,6 @@
         "max": -1184.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.2304,
-        "std": 0.0441,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.3983,
-        "std": 0.2004,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3611,
-        "std": 0.1703,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 6.3519,
-        "std": 0.4641,
-        "min": 6.17,
-        "max": 10.17
-      },
-      "Loan": {
-        "mean": 4177.7778,
-        "std": 3336.563,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30430.5556,
-        "std": 9545.1228,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.9031,
-        "std": 0.4717,
-        "min": 4.76,
-        "max": 9.26
-      },
-      "Glazing": {
-        "mean": 0.2567,
-        "std": 0.102,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8729,
-        "std": 0.4185,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0208,
-        "std": 0.3549,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 5.3611,
-        "std": 3.3384,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6797,
-        "std": 0.0523,
-        "min": 0.4,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 5.0,
-        "std": 3.3011,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.5964,
-        "std": 0.0251,
-        "min": 0.3,
-        "max": 0.6
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -813,29 +368,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "StJohns": {
     "n_rows": 360,
-    "model_r2": 0.7654,
-    "model_mae": 138.05,
-    "model_rmse": 249.32,
+    "model_r2_train": 0.9987,
+    "model_r2": 0.8571,
+    "model_mae": 106.86,
+    "model_rmse": 213.38,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.0826,
-      "TotalEmbodiedCO2_kgCO2": 0.8231,
-      "CostAnnualSysSave_CAD": 0.9416,
-      "TotalCO2Sav": 0.7194,
-      "AnnSCCSav_CAD": 0.721,
-      "BaseCostAnnual_CAD": 0.8936,
-      "PercentCostSysSav_percent": 0.9636,
-      "AnnGovtCostSav_CAD": 0.9783
-    },
-    "top5_features": {
-      "ElectricityInflationRate": 0.5615,
-      "Rebate": 0.2005,
-      "Rvalue_wall": 0.1019,
-      "Rvalue_roof": 0.0377,
-      "SHGC": 0.0149
+      "TotalOperationalCO2Save_kgCO2": 0.2499,
+      "TotalEmbodiedCO2_kgCO2": 0.9974,
+      "CostAnnualSysSave_CAD": 0.9672,
+      "TotalCO2Sav": 0.8893,
+      "AnnSCCSav_CAD": 0.8936,
+      "BaseCostAnnual_CAD": 0.8846,
+      "PercentCostSysSav_percent": 0.9759,
+      "AnnGovtCostSav_CAD": 0.9993
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -887,115 +441,6 @@
         "max": -1191.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.061,
-        "std": 0.0295,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.3856,
-        "std": 0.1996,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3381,
-        "std": 0.1734,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 5.5267,
-        "std": 0.2037,
-        "min": 5.46,
-        "max": 6.96
-      },
-      "Loan": {
-        "mean": 4427.7778,
-        "std": 3315.4161,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30777.7778,
-        "std": 9934.6363,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.1028,
-        "std": 0.1583,
-        "min": 4.05,
-        "max": 5.05
-      },
-      "Glazing": {
-        "mean": 0.2518,
-        "std": 0.0949,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.891,
-        "std": 0.4215,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 0.9854,
-        "std": 0.3661,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 4.9111,
-        "std": 3.4774,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6803,
-        "std": 0.0469,
-        "min": 0.5,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 4.9222,
-        "std": 3.4423,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.1003,
-        "std": 0.0053,
-        "min": 0.1,
-        "max": 0.2
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -1017,29 +462,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Toronto": {
     "n_rows": 519,
-    "model_r2": 0.6067,
-    "model_mae": 959.37,
-    "model_rmse": 2279.73,
+    "model_r2_train": 0.9977,
+    "model_r2": 0.7242,
+    "model_mae": 894.02,
+    "model_rmse": 2430.03,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.3157,
-      "TotalEmbodiedCO2_kgCO2": 0.9514,
-      "CostAnnualSysSave_CAD": 0.7778,
-      "TotalCO2Sav": 0.4268,
-      "AnnSCCSav_CAD": 0.4302,
-      "BaseCostAnnual_CAD": 0.4547,
-      "PercentCostSysSav_percent": 0.8183,
-      "AnnGovtCostSav_CAD": 0.6785
-    },
-    "top5_features": {
-      "A_PV": 0.2909,
-      "SHGC": 0.0747,
-      "SSP_SSP585": 0.0669,
-      "Glazing": 0.0666,
-      "Electax": 0.0631
+      "TotalOperationalCO2Save_kgCO2": 0.1966,
+      "TotalEmbodiedCO2_kgCO2": 0.9956,
+      "CostAnnualSysSave_CAD": 0.9901,
+      "TotalCO2Sav": 0.3421,
+      "AnnSCCSav_CAD": 0.3474,
+      "BaseCostAnnual_CAD": 0.9383,
+      "PercentCostSysSav_percent": 0.9853,
+      "AnnGovtCostSav_CAD": 0.9984
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -1091,115 +535,6 @@
         "max": -1153.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.2424,
-        "std": 0.0253,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.4256,
-        "std": 0.198,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3724,
-        "std": 0.1772,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 5.5612,
-        "std": 0.3271,
-        "min": 5.46,
-        "max": 9.96
-      },
-      "Loan": {
-        "mean": 4805.395,
-        "std": 3281.9104,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30741.8112,
-        "std": 9916.5828,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 3.7946,
-        "std": 0.4563,
-        "min": 3.6,
-        "max": 6.6
-      },
-      "Glazing": {
-        "mean": 0.2323,
-        "std": 0.0919,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8805,
-        "std": 0.4366,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 0.9383,
-        "std": 0.3408,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 5.4489,
-        "std": 3.7567,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.675,
-        "std": 0.046,
-        "min": 0.4,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 4.5279,
-        "std": 3.2748,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.5274,
-        "std": 0.1589,
-        "min": 0.1,
-        "max": 0.6
-      }
-    },
-    "ssp_distribution": {
-      "SSP585": 280,
-      "SSP245": 120,
-      "SSP126": 119
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -1221,29 +556,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Vancouver": {
     "n_rows": 360,
-    "model_r2": 0.1223,
-    "model_mae": 1185.31,
-    "model_rmse": 2406.26,
+    "model_r2_train": 0.9964,
+    "model_r2": 0.1931,
+    "model_mae": 1232.95,
+    "model_rmse": 2918.5,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": -0.3394,
-      "TotalEmbodiedCO2_kgCO2": 0.0821,
-      "CostAnnualSysSave_CAD": 0.5778,
-      "TotalCO2Sav": -0.3867,
-      "AnnSCCSav_CAD": -0.3887,
-      "BaseCostAnnual_CAD": 0.1872,
-      "PercentCostSysSav_percent": 0.5996,
-      "AnnGovtCostSav_CAD": 0.6463
-    },
-    "top5_features": {
-      "SHGC": 0.1412,
-      "Albedo_roof": 0.0913,
-      "Rebate": 0.0901,
-      "Electax": 0.0859,
-      "A_ST": 0.0775
+      "TotalOperationalCO2Save_kgCO2": -0.9591,
+      "TotalEmbodiedCO2_kgCO2": 0.9946,
+      "CostAnnualSysSave_CAD": 0.9756,
+      "TotalCO2Sav": -1.1225,
+      "AnnSCCSav_CAD": -1.1292,
+      "BaseCostAnnual_CAD": 0.814,
+      "PercentCostSysSav_percent": 0.9732,
+      "AnnGovtCostSav_CAD": 0.9985
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -1295,115 +629,6 @@
         "max": -1109.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.2394,
-        "std": 0.0316,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.4161,
-        "std": 0.1974,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3406,
-        "std": 0.1696,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 4.4531,
-        "std": 0.1405,
-        "min": 4.41,
-        "max": 4.91
-      },
-      "Loan": {
-        "mean": 4144.4444,
-        "std": 3394.4445,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 31611.1111,
-        "std": 9876.0501,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 3.2064,
-        "std": 0.112,
-        "min": 3.18,
-        "max": 3.68
-      },
-      "Glazing": {
-        "mean": 0.2418,
-        "std": 0.1008,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8958,
-        "std": 0.4163,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0,
-        "std": 0.3501,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 4.8722,
-        "std": 3.5334,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6897,
-        "std": 0.0304,
-        "min": 0.6,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 4.7667,
-        "std": 3.214,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.1036,
-        "std": 0.0187,
-        "min": 0.1,
-        "max": 0.2
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -1425,29 +650,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Whitehorse": {
     "n_rows": 360,
-    "model_r2": 0.4051,
-    "model_mae": 1727.66,
-    "model_rmse": 3245.29,
+    "model_r2_train": 0.996,
+    "model_r2": 0.5269,
+    "model_mae": 1554.04,
+    "model_rmse": 3264.58,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.0056,
-      "TotalEmbodiedCO2_kgCO2": 0.9492,
-      "CostAnnualSysSave_CAD": 0.8713,
-      "TotalCO2Sav": -0.2614,
-      "AnnSCCSav_CAD": -0.2587,
-      "BaseCostAnnual_CAD": 0.9119,
-      "PercentCostSysSav_percent": 0.5646,
-      "AnnGovtCostSav_CAD": 0.4583
-    },
-    "top5_features": {
-      "FuelInflationRate": 0.3052,
-      "A_PV": 0.1633,
-      "Albedo_roof": 0.0554,
-      "Loan": 0.0478,
-      "Glazing": 0.0474
+      "TotalOperationalCO2Save_kgCO2": -0.0064,
+      "TotalEmbodiedCO2_kgCO2": 0.9996,
+      "CostAnnualSysSave_CAD": 0.9582,
+      "TotalCO2Sav": -0.3108,
+      "AnnSCCSav_CAD": -0.3077,
+      "BaseCostAnnual_CAD": 0.9097,
+      "PercentCostSysSav_percent": 0.976,
+      "AnnGovtCostSav_CAD": 0.9967
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -1499,115 +723,6 @@
         "max": -928.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.2457,
-        "std": 0.0144,
-        "min": 0.17,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.3931,
-        "std": 0.1973,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3494,
-        "std": 0.1707,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 6.3561,
-        "std": 0.3462,
-        "min": 6.17,
-        "max": 8.17
-      },
-      "Loan": {
-        "mean": 4094.4444,
-        "std": 3294.6267,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 30277.7778,
-        "std": 9006.6862,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.8267,
-        "std": 0.1782,
-        "min": 4.76,
-        "max": 5.76
-      },
-      "Glazing": {
-        "mean": 0.255,
-        "std": 0.098,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.884,
-        "std": 0.4104,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 0.9882,
-        "std": 0.3431,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 5.2278,
-        "std": 3.2626,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.7,
-        "std": 0.0,
-        "min": 0.7,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 4.9056,
-        "std": 3.3632,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.1769,
-        "std": 0.1649,
-        "min": 0.1,
-        "max": 0.6
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -1629,29 +744,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Winnipeg": {
     "n_rows": 360,
-    "model_r2": 0.4532,
-    "model_mae": 1273.47,
-    "model_rmse": 2666.66,
+    "model_r2_train": 0.9969,
+    "model_r2": 0.7082,
+    "model_mae": 1120.29,
+    "model_rmse": 2716.92,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.2404,
-      "TotalEmbodiedCO2_kgCO2": 0.4772,
-      "CostAnnualSysSave_CAD": 0.6208,
-      "TotalCO2Sav": 0.3654,
-      "AnnSCCSav_CAD": 0.3679,
-      "BaseCostAnnual_CAD": 0.3414,
-      "PercentCostSysSav_percent": 0.6056,
-      "AnnGovtCostSav_CAD": 0.6069
-    },
-    "top5_features": {
-      "Rvalue_roof": 0.2667,
-      "SHGC": 0.0829,
-      "IntRate": 0.0608,
-      "Rebate": 0.0594,
-      "A_ST": 0.0541
+      "TotalOperationalCO2Save_kgCO2": 0.1119,
+      "TotalEmbodiedCO2_kgCO2": 0.9994,
+      "CostAnnualSysSave_CAD": 0.9895,
+      "TotalCO2Sav": 0.337,
+      "AnnSCCSav_CAD": 0.3416,
+      "BaseCostAnnual_CAD": 0.9175,
+      "PercentCostSysSav_percent": 0.9766,
+      "AnnGovtCostSav_CAD": 0.9922
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -1703,115 +817,6 @@
         "max": -1083.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.2398,
-        "std": 0.0254,
-        "min": 0.05,
-        "max": 0.25
-      },
-      "Albedo_roof": {
-        "mean": 0.3864,
-        "std": 0.205,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3478,
-        "std": 0.175,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 6.3394,
-        "std": 0.5869,
-        "min": 6.17,
-        "max": 11.67
-      },
-      "Loan": {
-        "mean": 4716.6667,
-        "std": 3398.7955,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 31444.4444,
-        "std": 9455.7891,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 4.8614,
-        "std": 0.3011,
-        "min": 4.76,
-        "max": 8.26
-      },
-      "Glazing": {
-        "mean": 0.255,
-        "std": 0.0993,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8833,
-        "std": 0.4267,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0188,
-        "std": 0.3649,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 5.1333,
-        "std": 3.3453,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6914,
-        "std": 0.0389,
-        "min": 0.3,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 5.0222,
-        "std": 3.2773,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.1108,
-        "std": 0.0492,
-        "min": 0.1,
-        "max": 0.6
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -1833,29 +838,28 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   },
   "Yellowknife": {
     "n_rows": 360,
-    "model_r2": 0.4305,
-    "model_mae": 763.18,
-    "model_rmse": 1528.02,
+    "model_r2_train": 0.9969,
+    "model_r2": 0.7048,
+    "model_mae": 647.68,
+    "model_rmse": 1292.86,
     "per_output_r2": {
-      "TotalOperationalCO2Save_kgCO2": 0.0302,
-      "TotalEmbodiedCO2_kgCO2": 0.2869,
-      "CostAnnualSysSave_CAD": 0.6109,
-      "TotalCO2Sav": 0.2172,
-      "AnnSCCSav_CAD": 0.2197,
-      "BaseCostAnnual_CAD": 0.904,
-      "PercentCostSysSav_percent": 0.5028,
-      "AnnGovtCostSav_CAD": 0.6723
-    },
-    "top5_features": {
-      "FuelInflationRate": 0.7837,
-      "Rvalue_wall": 0.0291,
-      "Rebate": 0.0223,
-      "A_PV": 0.0171,
-      "SHGC": 0.0153
+      "TotalOperationalCO2Save_kgCO2": -0.1422,
+      "TotalEmbodiedCO2_kgCO2": 0.9781,
+      "CostAnnualSysSave_CAD": 0.9502,
+      "TotalCO2Sav": 0.5053,
+      "AnnSCCSav_CAD": 0.5159,
+      "BaseCostAnnual_CAD": 0.8979,
+      "PercentCostSysSav_percent": 0.9392,
+      "AnnGovtCostSav_CAD": 0.9942
     },
     "output_stats": {
       "TotalOperationalCO2Save_kgCO2": {
@@ -1907,115 +911,6 @@
         "max": -1187.0
       }
     },
-    "input_stats": {
-      "BuildingFootprintArea_m2": {
-        "mean": 130.0,
-        "std": 0.0,
-        "min": 130.0,
-        "max": 130.0
-      },
-      "ElectricityInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "FuelInflationRate": {
-        "mean": 0.03,
-        "std": 0.02,
-        "min": 0.01,
-        "max": 0.05
-      },
-      "V_bites": {
-        "mean": 0.0673,
-        "std": 0.0359,
-        "min": 0.05,
-        "max": 0.21
-      },
-      "Albedo_roof": {
-        "mean": 0.3908,
-        "std": 0.2026,
-        "min": 0.1,
-        "max": 0.7
-      },
-      "A_ST": {
-        "mean": 0.3389,
-        "std": 0.1728,
-        "min": 0.1,
-        "max": 0.6
-      },
-      "Rvalue_roof": {
-        "mean": 7.2386,
-        "std": 0.4224,
-        "min": 7.04,
-        "max": 10.04
-      },
-      "Loan": {
-        "mean": 4533.3333,
-        "std": 3472.7751,
-        "min": 0.0,
-        "max": 10000.0
-      },
-      "Rebate": {
-        "mean": 31888.8889,
-        "std": 9719.6862,
-        "min": 20000.0,
-        "max": 50000.0
-      },
-      "Rvalue_wall": {
-        "mean": 5.6419,
-        "std": 0.4065,
-        "min": 5.46,
-        "max": 9.96
-      },
-      "Glazing": {
-        "mean": 0.2457,
-        "std": 0.097,
-        "min": 0.1,
-        "max": 0.4
-      },
-      "IntRate": {
-        "mean": 0.8667,
-        "std": 0.4355,
-        "min": 0.25,
-        "max": 1.5
-      },
-      "Infiltration": {
-        "mean": 1.0035,
-        "std": 0.3523,
-        "min": 0.5,
-        "max": 1.5
-      },
-      "Electax": {
-        "mean": 5.0722,
-        "std": 3.4033,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "SHGC": {
-        "mean": 0.6992,
-        "std": 0.0091,
-        "min": 0.6,
-        "max": 0.7
-      },
-      "Fueltax": {
-        "mean": 4.9944,
-        "std": 3.4106,
-        "min": 0.0,
-        "max": 10.0
-      },
-      "A_PV": {
-        "mean": 0.1056,
-        "std": 0.0253,
-        "min": 0.1,
-        "max": 0.3
-      }
-    },
-    "ssp_distribution": {
-      "SSP126": 120,
-      "SSP245": 120,
-      "SSP585": 120
-    },
     "feature_columns": [
       "BuildingFootprintArea_m2",
       "ElectricityInflationRate",
@@ -2037,6 +932,11 @@
       "SSP_SSP126",
       "SSP_SSP245",
       "SSP_SSP585"
-    ]
+    ],
+    "rbf_settings": {
+      "kernel": "thin_plate_spline",
+      "degree": 0,
+      "smoothing": 1.0
+    }
   }
 }
