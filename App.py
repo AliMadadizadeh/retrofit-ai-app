@@ -180,9 +180,9 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "V_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "V_wall",  "icon": "🧱"},
-    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "G",       "icon": "🪟"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "R_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "R_wall",  "icon": "🧱"},
+    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "GR",       "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
     "Albedo_roof":  {"label": "Roof albedo",              "unit": "—",     "symbol": "α",       "icon": "☀️"},
@@ -195,8 +195,8 @@ ECONOMIC_VARS = {
     "Loan":         {"label": "Loan amount",              "unit": "$",     "symbol": "L",       "icon": "🏦"},
     "Rebate":       {"label": "Rebate amount",            "unit": "$",     "symbol": "R",       "icon": "💰"},
     "IntRate":      {"label": "Interest rate",            "unit": "%",     "symbol": "i",       "icon": "📈"},
-    "Electax":      {"label": "Electricity tax",          "unit": "¢/kWh", "symbol": "τ_e",     "icon": "⚡"},
-    "Fueltax":      {"label": "Fuel tax",                 "unit": "$/GJ",  "symbol": "τ_f",     "icon": "⛽"},
+    "Electax":      {"label": "Electricity tax",          "unit": "%", "symbol": "τ_e",     "icon": "⚡"},
+    "Fueltax":      {"label": "Fuel tax",                 "unit": "%",  "symbol": "τ_f",     "icon": "⛽"},
 }
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
