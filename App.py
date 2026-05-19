@@ -632,20 +632,3 @@ if run and selected:
 
             with rec_cols[i % 2]:
                 st.markdown(card_html, unsafe_allow_html=True)
-
-    # ── Top 10    # ── Top 10 ────────────────────────────────────
-    with st.expander("🏆 Top 10 candidates"):
-        top10 = df_sorted.head(10)[["Score","GHG","Owner","Gov"]].copy()
-        top10["GHG"] = top10["GHG"] / 1000
-        top10.index = range(1, 11)
-        top10.columns = ["Score","CO₂ saved (tCO₂e)","Owner ($)","Gov ($)"]
-        st.dataframe(
-            top10.style.format({"Score":"{:.4f}","CO₂ saved (tCO₂e)":"{:,.1f}",
-                                "Owner ($)":"${:,.0f}","Gov ($)":"${:,.0f}"}),
-            use_container_width=True,
-        )
-
-    # ── Download ──────────────────────────────────
-    csv = df_sorted.head(50).to_csv(index=False).encode()
-    st.download_button("⬇️ Download top 50 results (CSV)", data=csv,
-                       file_name=f"retrofit_{city}_{ssp}.csv", mime="text/csv")
