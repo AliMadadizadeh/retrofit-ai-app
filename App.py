@@ -201,7 +201,7 @@ ECONOMIC_VARS = {
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
 
-# ─────────────────────────────────────────
+# ───-──────────────────────────────────────
 # ── CHANGED: Load one model per city ─────
 # Place all city_models/ files next to app.py
 # ─────────────────────────────────────────
