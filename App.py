@@ -12,6 +12,8 @@ def load_dataset():
     df = pd.read_csv("retrofit_dataset_final_solution1.csv")
     return df
 
+DATASET = load_dataset()
+
 
 # ─────────────────────────────────────────
 # PAGE CONFIG
