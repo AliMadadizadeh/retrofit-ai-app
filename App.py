@@ -6,7 +6,12 @@ import folium
 from streamlit_folium import st_folium
 import plotly.graph_objects as go
 import plotly.express as px
-from scipy.stats import qmc
+# ── Load the real dataset once — used as exact simulation candidates ──────────
+@st.cache_data
+def load_dataset():
+    df = pd.read_csv("retrofit_dataset_final_solution1.csv")
+    return df
+
 
 # ─────────────────────────────────────────
 # PAGE CONFIG
@@ -180,9 +185,9 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "R_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "R_wall",  "icon": "🧱"},
-    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "GR",       "icon": "🪟"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "V_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "V_wall",  "icon": "🧱"},
+    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "G",       "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
     "Albedo_roof":  {"label": "Roof albedo",              "unit": "—",     "symbol": "α",       "icon": "☀️"},
@@ -195,13 +200,13 @@ ECONOMIC_VARS = {
     "Loan":         {"label": "Loan amount",              "unit": "$",     "symbol": "L",       "icon": "🏦"},
     "Rebate":       {"label": "Rebate amount",            "unit": "$",     "symbol": "R",       "icon": "💰"},
     "IntRate":      {"label": "Interest rate",            "unit": "%",     "symbol": "i",       "icon": "📈"},
-    "Electax":      {"label": "Electricity tax",          "unit": "%", "symbol": "τ_e",     "icon": "⚡"},
-    "Fueltax":      {"label": "Fuel tax",                 "unit": "%",  "symbol": "τ_f",     "icon": "⛽"},
+    "Electax":      {"label": "Electricity tax",          "unit": "¢/kWh", "symbol": "τ_e",     "icon": "⚡"},
+    "Fueltax":      {"label": "Fuel tax",                 "unit": "$/GJ",  "symbol": "τ_f",     "icon": "⛽"},
 }
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
 
-# ───-──────────────────────────────────────
+# ─────────────────────────────────────────
 # ── CHANGED: Load one model per city ─────
 # Place all city_models/ files next to app.py
 # ─────────────────────────────────────────
@@ -346,11 +351,6 @@ with ctrl_col:
         st.success(f"Weights ✓ ({wsum:.2f})")
         weights_ok = True
 
-    st.markdown('<div class="section-label" style="margin-top:12px;">Sampling</div>', unsafe_allow_html=True)
-    n_samples = st.select_slider("Candidates", [500,1000,2000,5000], value=2000)
-    use_lhs   = st.toggle("Latin Hypercube Sampling", value=True,
-                          help="Better coverage than pure random with the same sample count")
-
     # ── CHANGED: check city has a model loaded ────────────────────────────────
     city_has_model = selected in city_models
     ready = selected and weights_ok and model_ok and city_has_model
@@ -369,44 +369,29 @@ with ctrl_col:
 if run and selected:
     city = selected
 
-    # ── Pick the city-specific RBF bundle ────────────────────────────────────
-    bundle         = city_models[city]
-    rbf_model      = bundle["rbf"]
-    rbf_scaler     = bundle["scaler"]
-    model_columns  = bundle["columns"]
+    # ── Use real dataset rows for this city — exact simulation values, no prediction error ──
+    OUTPUT_COLS_ALL = [
+        "TotalOperationalCO2Save_kgCO2", "TotalEmbodiedCO2_kgCO2",
+        "CostAnnualSysSave_CAD", "TotalCO2Sav", "AnnSCCSav_CAD",
+        "BaseCostAnnual_CAD", "PercentCostSysSav_percent", "AnnGovtCostSav_CAD"
+    ]
 
-    keys = list(RANGES.keys())
-    lo   = np.array([RANGES[k][0] for k in keys])
-    hi   = np.array([RANGES[k][1] for k in keys])
+    with st.spinner(f"Filtering dataset for {city} / {ssp}…"):
+        df = DATASET[
+            (DATASET["City"] == city) &
+            (DATASET["SSP"]  == ssp)
+        ].copy().reset_index(drop=True)
 
-    with st.spinner(f"Sampling {n_samples:,} candidates for {city}…"):
-        if use_lhs:
-            sampler = qmc.LatinHypercube(d=len(keys), seed=42)
-            samples = qmc.scale(sampler.random(n=n_samples), lo, hi)
-        else:
-            rng     = np.random.default_rng(42)
-            samples = rng.uniform(lo, hi, size=(n_samples, len(keys)))
+        if df.empty:
+            st.error(f"No data rows found for {city} + {ssp}. Try a different SSP scenario.")
+            st.stop()
 
-        df = pd.DataFrame(samples, columns=keys)
-        # ── CHANGED: no City column — per-city model doesn't need it ──────────
-        df["SSP"]                        = ssp
-        df["BuildingFootprintArea_m2"]   = footprint
-        df["ElectricityInflationRate"]   = elec_inf
-        df["FuelInflationRate"]          = fuel_inf
-
-    with st.spinner(f"Running {city} RBF interpolation…"):
-        # One-hot encode SSP, align columns, scale, then interpolate
-        X = pd.get_dummies(df, columns=["SSP"])
-        X = X.reindex(columns=model_columns, fill_value=0).values.astype(float)
-        X_sc = rbf_scaler.transform(X)
-        pred = rbf_model(X_sc)   # RBFInterpolator uses __call__, not .predict()
-
-        df["GHG"]   = pred[:, 3]   # TotalCO2Sav
-        df["Owner"] = pred[:, 2]   # CostAnnualSysSave_CAD
-        df["Gov"]   = pred[:, 7]   # AnnGovtCostSav_CAD
+        df["GHG"]   = df["TotalCO2Sav"]
+        df["Owner"] = df["CostAnnualSysSave_CAD"]
+        df["Gov"]   = df["AnnGovtCostSav_CAD"]
 
         def norm(s): return (s - s.min()) / (s.max() - s.min() + 1e-9)
-        df["GHG_n"]   = 1 - norm(df["GHG"])
+        df["GHG_n"]   = 1 - norm(df["GHG"])   # lower CO2 = better
         df["Owner_n"] = norm(df["Owner"])
         df["Gov_n"]   = norm(df["Gov"])
         df["Score"]   = w_owner*df["Owner_n"] + w_gov*df["Gov_n"] + w_ghg*df["GHG_n"]
@@ -416,11 +401,11 @@ if run and selected:
 
     # ── Metric cards ──────────────────────────────
     st.markdown("---")
-    st.success(f"✅ Best retrofit found for **{city}** under **{ssp}** from {n_samples:,} candidates")
+    st.success(f"✅ Best retrofit found for **{city}** under **{ssp}** from {len(df):,} real simulation scenarios")
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Composite score", f"{best['Score']:.4f}")
-    m2.metric("GHG reduction", f"{best['GHG'] / 1000:,.1f} tCO₂e/20 years")
+    m2.metric("GHG reduction",   f"{best['GHG']:.1f} tCO₂e/yr")
     m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
     m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
 
