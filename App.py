@@ -3,14 +3,20 @@ import pandas as pd
 import numpy as np
 import joblib
 import folium
+import os
 from streamlit_folium import st_folium
 import plotly.graph_objects as go
 import plotly.express as px
-# ── Load the real dataset once — used as exact simulation candidates ──────────
+
+# ── Resolve paths relative to this script — works locally and on Streamlit Cloud
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH  = os.path.join(BASE_DIR, "retrofit_dataset_final_solution1.csv")
+MODEL_DIR  = os.path.join(BASE_DIR, "city_models")
+
+# ── Load the real dataset once ────────────────────────────────────────────────
 @st.cache_data
 def load_dataset():
-    df = pd.read_csv("retrofit_dataset_final_solution1.csv")
-    return df
+    return pd.read_csv(DATA_PATH)
 
 DATASET = load_dataset()
 
@@ -202,8 +208,8 @@ ECONOMIC_VARS = {
     "Loan":         {"label": "Loan amount",              "unit": "$",     "symbol": "L",       "icon": "🏦"},
     "Rebate":       {"label": "Rebate amount",            "unit": "$",     "symbol": "R",       "icon": "💰"},
     "IntRate":      {"label": "Interest rate",            "unit": "%",     "symbol": "i",       "icon": "📈"},
-    "Electax":      {"label": "Electricity tax",          "unit": "%", "symbol": "τ_e",     "icon": "⚡"},
-    "Fueltax":      {"label": "Fuel tax",                 "unit": "%",  "symbol": "τ_f",     "icon": "⛽"},
+    "Electax":      {"label": "Electricity tax",          "unit": "¢/kWh", "symbol": "τ_e",     "icon": "⚡"},
+    "Fueltax":      {"label": "Fuel tax",                 "unit": "$/GJ",  "symbol": "τ_f",     "icon": "⛽"},
 }
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
@@ -212,7 +218,7 @@ ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
 # ── CHANGED: Load one model per city ─────
 # Place all city_models/ files next to app.py
 # ─────────────────────────────────────────
-MODEL_DIR = "city_models"  # folder containing <City>_model.pkl and <City>_columns.pkl
+MODEL_DIR = os.path.join(BASE_DIR, "city_models")  # already set at top, kept for clarity
 
 @st.cache_resource
 def load_city_models():
@@ -407,7 +413,7 @@ if run and selected:
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Composite score", f"{best['Score']:.4f}")
-    m2.metric("GHG reduction",   f"{best['GHG']/1000:,.0f} tCO₂e/20 yrs")
+    m2.metric("GHG reduction",   f"{best['GHG']:.1f} tCO₂e/yr")
     m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
     m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
 
@@ -545,22 +551,63 @@ if run and selected:
         )
         st.plotly_chart(fig_par, use_container_width=True)
 
-    # ── Sensitivity ───────────────────────────────
+    # Sensitivity - OAT using RBF model
     with st.expander("📊 Sensitivity — which variables drive the score?"):
 
-        # Compute correlation for every parameter
-        corrs = {}
-        for k in list(RANGES.keys()):
-            xs, ys = df[k].values, df["Score"].values
-            mx, my = xs.mean(), ys.mean()
-            num = ((xs - mx) * (ys - my)).sum()
-            den = np.sqrt(((xs - mx) ** 2).sum() * ((ys - my) ** 2).sum()) + 1e-9
-            corrs[k] = abs(num / den)
+        st.caption(
+            "One-At-a-Time (OAT): each parameter is swept from its min to max "
+            "while all others are held at their dataset mean for this city. "
+            "Bar length = how much the composite score changes — true physical sensitivity."
+        )
 
-        # Split into two ordered dicts — building then economic
-        def make_chart(var_dict, color, title):
-            subset = {k: corrs[k] for k in var_dict if k in corrs}
-            subset = dict(sorted(subset.items(), key=lambda x: x[1]))  # ascending → bars left-to-right
+        city_data    = DATASET[DATASET["City"] == city]
+        numeric_keys = list(RANGES.keys())
+        base = {k: float(city_data[k].mean()) for k in numeric_keys}
+        base["SSP"]                      = ssp
+        base["BuildingFootprintArea_m2"] = footprint
+        base["ElectricityInflationRate"] = elec_inf
+        base["FuelInflationRate"]        = fuel_inf
+
+        rbf_bundle    = city_models[city]
+        rbf_m         = rbf_bundle["rbf"]
+        rbf_s         = rbf_bundle["scaler"]
+        rbf_cols      = rbf_bundle["columns"]
+
+        N_SWEEP = 30
+
+        def rbf_batch(rows_df):
+            X = pd.get_dummies(rows_df, columns=["SSP"])
+            X = X.reindex(columns=rbf_cols, fill_value=0).values.astype(float)
+            return rbf_m(rbf_s.transform(X))
+
+        ghg_min   = float(city_data["TotalCO2Sav"].min())
+        ghg_rng   = float(city_data["TotalCO2Sav"].max()   - ghg_min)   + 1e-9
+        own_min   = float(city_data["CostAnnualSysSave_CAD"].min())
+        own_rng   = float(city_data["CostAnnualSysSave_CAD"].max() - own_min) + 1e-9
+        gov_min   = float(city_data["AnnGovtCostSav_CAD"].min())
+        gov_rng   = float(city_data["AnnGovtCostSav_CAD"].max() - gov_min)    + 1e-9
+
+        def composite(pred_row):
+            ghg_n   = 1 - (pred_row[3] - ghg_min) / ghg_rng
+            own_n   =     (pred_row[2] - own_min)  / own_rng
+            gov_n   =     (pred_row[7] - gov_min)  / gov_rng
+            return w_owner * own_n + w_gov * gov_n + w_ghg * ghg_n
+
+        oat = {}
+        for k in numeric_keys:
+            lo_v, hi_v = RANGES[k]
+            rows = []
+            for v in np.linspace(lo_v, hi_v, N_SWEEP):
+                row = base.copy()
+                row[k] = v
+                rows.append(row)
+            preds  = rbf_batch(pd.DataFrame(rows))
+            scores = [composite(preds[i]) for i in range(N_SWEEP)]
+            oat[k] = float(max(scores) - min(scores))
+
+        def make_oat_chart(var_dict, color):
+            subset = {k: oat.get(k, 0) for k in var_dict}
+            subset = dict(sorted(subset.items(), key=lambda x: x[1]))
             y_labels = [
                 f"{var_dict[k]['icon']}  {var_dict[k]['symbol']}  —  {var_dict[k]['label']}"
                 for k in subset
@@ -573,15 +620,14 @@ if run and selected:
                 marker_line_width=0,
             ))
             fig.update_layout(
-                title=dict(text=title, font=dict(size=14, color="#0a0a0a")),
-                margin=dict(t=40, b=10, l=10, r=20),
+                margin=dict(t=10, b=10, l=10, r=20),
                 height=320,
                 plot_bgcolor="white",
                 paper_bgcolor="white",
                 font=dict(color="#0a0a0a", size=12),
                 xaxis=dict(
                     showgrid=False,
-                    title="|Correlation with score|",
+                    title="Score range  (max − min  when sweeping this param)",
                     title_font=dict(size=12, color="#0a0a0a"),
                     tickfont=dict(size=11, color="#0a0a0a"),
                 ),
@@ -594,10 +640,7 @@ if run and selected:
         with sens_col1:
             st.markdown('<div class="result-group-title">🏗️ Building parameters</div>',
                         unsafe_allow_html=True)
-            st.plotly_chart(
-                make_chart(BUILDING_VARS, "#1a1a2e", ""),
-                use_container_width=True,
-            )
+            st.plotly_chart(make_oat_chart(BUILDING_VARS, "#1a1a2e"), use_container_width=True)
 
         with sens_col2:
             st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
