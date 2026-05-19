@@ -420,7 +420,7 @@ if run and selected:
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Composite score", f"{best['Score']:.4f}")
-    m2.metric("GHG reduction", f"{best['GHG'] / 1000:,.1f} tCO₂e/20 years)
+    m2.metric("GHG reduction", f"{best['GHG'] / 1000:,.1f} tCO₂e/20 years")
     m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
     m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
 
