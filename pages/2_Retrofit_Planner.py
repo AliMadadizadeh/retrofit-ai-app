@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 st.set_page_config(
-    page_title="Retrofit Planner | Madadiz",
+    page_title="AI Retrofit Planner | Madadiz",
     page_icon="🏗️",
     layout="wide"
 )
@@ -18,371 +18,306 @@ def load_data():
     return pd.read_csv(DATA_PATH)
 
 DATASET = load_data()
+available_cities = sorted(DATASET["City"].unique().tolist())
+available_ssps   = sorted(DATASET["SSP"].unique().tolist())
 
 # ── Styling ───────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     #MainMenu, footer, header {visibility: hidden;}
-    .block-container {padding: 1.5rem 2rem;}
-    .section-title {
-        font-size: 13px; font-weight: 800; color: #1a1a2e;
-        text-transform: uppercase; letter-spacing: 0.1em;
-        margin: 1.5rem 0 0.8rem; border-bottom: 2px solid #1a1a2e;
-        padding-bottom: 6px;
+    .block-container {padding: 0 !important; max-width: 100% !important;}
+
+    .hero {
+        background: #1a1a2e; padding: 3rem 4rem 2.5rem; margin-bottom: 0;
     }
-    .result-card {
-        background: #f0f4f8; border: 1.5px solid #c9d4e0;
-        border-radius: 12px; padding: 16px 20px; margin-bottom: 12px;
+    .hero-tag {
+        font-size: 11px; font-weight: 800; letter-spacing: 0.16em;
+        text-transform: uppercase; color: #c8922a;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;
     }
-    .result-card-title {
-        font-size: 13px; font-weight: 800; color: #1a1a2e;
-        text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+    .hero-tag::before { content:''; display:block; width:24px; height:1px; background:#c8922a; }
+    .hero h1 { font-size:2.4rem; font-weight:800; color:#f4f0e6; letter-spacing:-0.03em; line-height:1.1; margin-bottom:0.8rem; }
+    .hero h1 em { color:#c8922a; font-style:italic; }
+    .hero p { font-size:0.95rem; color:rgba(244,240,230,0.6); max-width:560px; line-height:1.7; }
+
+    .step-label {
+        font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase;
+        color:#c8922a; display:flex; align-items:center; gap:6px;
+        margin-bottom:0.8rem; margin-top:1.8rem;
     }
-    .result-card-value {
-        font-size: 26px; font-weight: 800; color: #0a0a0a;
-        letter-spacing: -0.02em; line-height: 1.1;
+    .step-label::after { content:''; flex:1; height:1px; background:#f5e4c0; }
+
+    div[data-testid="stButton"] button[kind="primary"] {
+        background: #c8922a !important; color: #1a1a1a !important;
+        font-weight: 800 !important; letter-spacing: 0.06em !important;
+        text-transform: uppercase !important; border: none !important;
+        border-radius: 4px !important; width: 100% !important;
     }
-    .result-card-sub {
-        font-size: 12px; color: #64748b; margin-top: 3px; font-weight: 600;
-    }
-    .rec-card {
-        background: #ffffff; border: 1.5px solid #c9d4e0;
-        border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
-        border-left: 4px solid #1a1a2e;
-    }
-    .rec-card.high { border-left-color: #b91c1c; }
-    .rec-card.medium { border-left-color: #d97706; }
-    .rec-card.low { border-left-color: #15803d; }
-    .rec-title { font-size: 14px; font-weight: 800; color: #0a0a0a; margin-bottom: 4px; }
-    .rec-value { font-size: 18px; font-weight: 800; color: #1a1a2e; }
-    .rec-desc { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5; }
-    .badge {
-        display: inline-block; font-size: 10px; font-weight: 800;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        padding: 2px 8px; border-radius: 4px; margin-left: 6px;
-    }
-    .badge-high { background: #fee2e2; color: #b91c1c; }
-    .badge-med  { background: #fef3c7; color: #d97706; }
-    .badge-low  { background: #dcfce7; color: #15803d; }
-    .bar-track { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin: 4px 0; }
-    .bar-fill  { height: 8px; border-radius: 99px; background: #1a1a2e; }
+    div[data-testid="stButton"] button[kind="primary"]:hover { background:#e8b85a !important; }
+
+    .empty-state { text-align:center; padding:4rem 2rem; color:#9aaac0; }
+    .empty-icon  { font-size:3.5rem; margin-bottom:1rem; opacity:0.35; }
+    .empty-title { font-size:1.2rem; font-weight:700; color:#1b2a4a; opacity:0.4; margin-bottom:0.5rem; }
+    .empty-sub   { font-size:0.82rem; line-height:1.6; max-width:220px; margin:0 auto; }
+
+    .result-tag   { font-size:11px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:#c8922a; display:flex; align-items:center; gap:6px; margin-bottom:0.5rem; }
+    .result-tag::before { content:''; display:block; width:16px; height:1px; background:#c8922a; }
+    .result-title { font-size:1.5rem; font-weight:800; color:#1b2a4a; letter-spacing:-0.02em; margin-bottom:1.2rem; }
+
+    .kpi-row { display:flex; gap:10px; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .kpi { flex:1; min-width:90px; background:#f0f4f8; border:1px solid #c9d4e0; border-radius:8px; padding:12px 14px; text-align:center; }
+    .kpi-n { font-size:1.3rem; font-weight:800; color:#1b2a4a; line-height:1; }
+    .kpi-l { font-size:10px; font-weight:700; color:#6b7a9a; margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; }
+
+    .sb-title { font-size:12px; font-weight:800; color:#1b2a4a; text-transform:uppercase; letter-spacing:0.08em; border-bottom:2px solid #1b2a4a; padding-bottom:6px; margin:1.2rem 0 10px; }
+
+    .rec-item { display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-radius:8px; border:1.5px solid #e8e2d4; background:white; margin-bottom:8px; }
+    .rec-icon { font-size:1.3rem; flex-shrink:0; margin-top:2px; }
+    .rec-body { flex:1; }
+    .rec-name { font-size:0.85rem; font-weight:700; color:#1b2a4a; margin-bottom:2px; }
+    .rec-val  { font-size:1rem; font-weight:800; color:#0a0a0a; }
+    .rec-desc { font-size:0.75rem; color:#6b7a9a; margin-top:3px; line-height:1.5; }
+    .rec-bar-wrap  { width:56px; flex-shrink:0; text-align:right; }
+    .rec-bar-track { height:5px; background:#e8e2d4; border-radius:99px; overflow:hidden; margin-bottom:3px; margin-top:6px; }
+    .rec-bar-fill  { height:5px; border-radius:99px; background:#1b2a4a; }
+    .rec-bar-pct   { font-size:10px; font-weight:700; color:#6b7a9a; }
+
+    .pbadge { display:inline-block; font-size:9px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:2px 6px; border-radius:3px; margin-left:5px; }
+    .p-high { background:#fee2e2; color:#b91c1c; }
+    .p-med  { background:#fef3c7; color:#d97706; }
+    .p-low  { background:#dcfce7; color:#15803d; }
+
+    .incentive-item { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; background:#f5e4c0; border-radius:6px; margin-bottom:7px; }
+    .incentive-icon { font-size:1.1rem; flex-shrink:0; }
+    .incentive-name { font-size:0.82rem; font-weight:700; color:#1b2a4a; }
+    .incentive-desc { font-size:0.74rem; color:#5c6070; margin-top:2px; line-height:1.4; }
+
+    .roadmap-step { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid #f0ebe3; }
+    .roadmap-step:last-child { border-bottom:none; }
+    .roadmap-num { width:32px; height:32px; border-radius:50%; background:#1b2a4a; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; margin-top:2px; }
+    .roadmap-phase { font-size:10px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:#c8922a; }
+    .roadmap-title { font-size:0.82rem; color:#1b2a4a; margin:2px 0; line-height:1.5; }
+
+    .disclaimer { background:#f5e4c0; border-left:3px solid #c8922a; border-radius:0 6px 6px 0; padding:12px 16px; font-size:0.78rem; line-height:1.6; color:#1a1a2e; margin-top:1.5rem; }
+    .disclaimer a { color:#1b2a4a; font-weight:700; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Header ────────────────────────────────────────────────────────────────────
-st.markdown("## 🏗️ Retrofit Planner")
-st.caption("Select your building parameters to find the best retrofit plan from our simulation database.")
-st.markdown("---")
+# ── Hero ──────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="hero">
+  <div class="hero-tag">AI-Powered Tool — Madadiz Inc.</div>
+  <h1>Get your <em>personalized</em><br>retrofit plan</h1>
+  <p>Select your building parameters. Our model searches thousands of real building simulations and returns the best retrofit strategy for your situation — no API, no guessing.</p>
+</div>
+""", unsafe_allow_html=True)
 
-# ── Available cities and SSPs in dataset ─────────────────────────────────────
-available_cities = sorted(DATASET["City"].unique().tolist())
-available_ssps   = sorted(DATASET["SSP"].unique().tolist())
+st.markdown("")
 
-# ── FORM ─────────────────────────────────────────────────────────────────────
-col1, col2, col3 = st.columns(3, gap="large")
+# ── Layout ────────────────────────────────────────────────────────────────────
+form_col, result_col = st.columns([1, 1.1], gap="large")
 
-with col1:
-    st.markdown('<div class="section-title">📍 Location & Scenario</div>', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════
+# LEFT — FORM
+# ══════════════════════════════════════════════════
+with form_col:
+
+    st.markdown('<div class="step-label">📍 Location & Climate Scenario</div>', unsafe_allow_html=True)
     city = st.selectbox("City", available_cities)
-    ssp  = st.selectbox("Climate Scenario (SSP)", available_ssps,
-                        help="SSP126 = low emissions, SSP245 = moderate, SSP585 = high emissions")
 
-with col2:
-    st.markdown('<div class="section-title">🎯 Your Priorities</div>', unsafe_allow_html=True)
-    st.caption("Set how much you care about each objective (must total 1.0)")
-    w_owner = st.slider("🏠 Owner cost savings",  0.0, 1.0, 0.60, 0.05)
-    w_gov   = st.slider("🏛️ Government savings",  0.0, 1.0, 0.20, 0.05)
-    w_ghg   = st.slider("🌿 GHG emission reduction", 0.0, 1.0, 0.20, 0.05)
-    wsum = round(w_owner + w_gov + w_ghg, 2)
-    if abs(wsum - 1.0) > 0.01:
-        st.error(f"⚠️ Weights sum to {wsum} — must equal 1.0")
-        weights_ok = False
-    else:
-        st.success(f"✓ Weights sum to {wsum}")
-        weights_ok = True
+    ssp_map = {
+        "SSP126": "SSP126 — Low emissions (optimistic)",
+        "SSP245": "SSP245 — Moderate emissions (likely)",
+        "SSP585": "SSP585 — High emissions (worst case)",
+    }
+    ssp_labels  = [ssp_map.get(s, s) for s in available_ssps]
+    ssp_choice  = st.selectbox("Climate Scenario", ssp_labels, index=1)
+    ssp         = available_ssps[ssp_labels.index(ssp_choice)]
 
-with col3:
-    st.markdown('<div class="section-title">🏗️ Building Info</div>', unsafe_allow_html=True)
-    footprint = st.number_input("Building Footprint (m²)", min_value=30, max_value=2000, value=130, step=10)
-    st.markdown("---")
-    st.markdown('<div class="section-title">💰 Budget Preference</div>', unsafe_allow_html=True)
-    budget_pref = st.selectbox("Investment Priority", [
-        "Lowest cost first",
-        "Best GHG reduction first",
-        "Best owner savings first",
-        "Balanced (default)"
+    st.markdown('<div class="step-label">🏗️ Building Details</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    year_built = c1.slider("Year Built", 1920, 2020, 1975, step=5)
+    footprint  = c2.number_input("Floor Area (m²)", 30, 2000, 130, 10)
+
+    building_type = st.selectbox("Building Type", [
+        "Single-family Home", "Semi-detached / Townhouse",
+        "Low-rise Apartment (2–4 storeys)", "Mid-rise (5–11 storeys)",
+        "High-rise (12+)", "Commercial / Office", "Institutional"
     ])
 
-st.markdown("---")
-run = st.button(
-    "▶ Find Best Retrofit Plan",
-    type="primary",
-    use_container_width=True,
-    disabled=not weights_ok
-)
+    st.markdown('<div class="step-label">⚙️ Current Systems</div>', unsafe_allow_html=True)
+    c3, c4 = st.columns(2)
+    heating    = c3.selectbox("Heating",    ["Gas Furnace","Gas Boiler","Electric Baseboard","Heat Pump","Oil Furnace","District Heating"])
+    cooling    = c4.selectbox("Cooling",    ["No Cooling","Central A/C","Mini-split","Window Units"])
+    c5, c6     = st.columns(2)
+    insulation = c5.selectbox("Insulation", ["Poor (pre-1980s)","Moderate (1980–2005)","Good (post-2005)"])
+    windows    = c6.selectbox("Windows",    ["Single-pane","Double-pane","Triple-pane"])
 
-# ── RESULTS ───────────────────────────────────────────────────────────────────
-if run and weights_ok:
-    with st.spinner(f"Searching {city} simulation database…"):
+    st.markdown('<div class="step-label">🎯 Your Goals</div>', unsafe_allow_html=True)
+    goals = st.multiselect("What matters most?", [
+        "💰 Reduce energy bills", "🌿 Lower carbon emissions",
+        "🌡 Improve comfort",     "🏠 Increase property value",
+        "📋 Regulatory compliance"
+    ], default=["💰 Reduce energy bills","🌿 Lower carbon emissions"])
 
-        # Filter dataset
-        df = DATASET[
-            (DATASET["City"] == city) &
-            (DATASET["SSP"]  == ssp)
-        ].copy().reset_index(drop=True)
+    st.markdown('<div class="step-label">⚖️ Optimization Priority</div>', unsafe_allow_html=True)
+    priority = st.radio("Optimize for", [
+        "Balanced (recommended)",
+        "Maximum owner savings",
+        "Maximum GHG reduction",
+        "Maximum government savings",
+    ])
 
-        if df.empty:
-            st.error(f"No simulation data found for {city} + {ssp}. Try a different combination.")
-            st.stop()
+    w_owner = {"Balanced (recommended)":0.60,"Maximum owner savings":1.0,"Maximum GHG reduction":0.0,"Maximum government savings":0.0}[priority]
+    w_gov   = {"Balanced (recommended)":0.20,"Maximum owner savings":0.0,"Maximum GHG reduction":0.0,"Maximum government savings":1.0}[priority]
+    w_ghg   = {"Balanced (recommended)":0.20,"Maximum owner savings":0.0,"Maximum GHG reduction":1.0,"Maximum government savings":0.0}[priority]
 
-        # Score rows
-        def norm(s): return (s - s.min()) / (s.max() - s.min() + 1e-9)
+    st.markdown("")
+    run = st.button("▶ Generate My Retrofit Plan", type="primary")
 
-        df["Owner_n"] = norm(df["CostAnnualSysSave_CAD"])
-        df["Gov_n"]   = norm(df["AnnGovtCostSav_CAD"])
-        df["GHG_n"]   = 1 - norm(df["TotalCO2Sav"])  # lower CO2 = better
+# ══════════════════════════════════════════════════
+# RIGHT — RESULTS
+# ══════════════════════════════════════════════════
+with result_col:
 
-        # Apply budget preference override
-        if budget_pref == "Lowest cost first":
-            df["Score"] = 1.0*df["Owner_n"]
-        elif budget_pref == "Best GHG reduction first":
-            df["Score"] = 1.0*df["GHG_n"]
-        elif budget_pref == "Best owner savings first":
-            df["Score"] = 1.0*df["Owner_n"]
-        else:
-            df["Score"] = w_owner*df["Owner_n"] + w_gov*df["Gov_n"] + w_ghg*df["GHG_n"]
+    if not run:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="empty-icon">🏗️</div>
+          <div class="empty-title">Your plan will appear here</div>
+          <p class="empty-sub">Fill in your building parameters on the left and click Generate to receive your personalized retrofit recommendations.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        best = df.sort_values("Score", ascending=False).iloc[0]
+    else:
+        with st.spinner(f"Searching {city} simulation database…"):
+            df = DATASET[(DATASET["City"]==city)&(DATASET["SSP"]==ssp)].copy().reset_index(drop=True)
+            if df.empty:
+                st.error(f"No simulation data found for {city} + {ssp}. Try a different combination.")
+                st.stop()
 
-    # ── Summary metrics ───────────────────────────────────────────────────────
-    st.success(f"✅ Best retrofit plan found for **{city}** ({ssp}) from **{len(df):,}** simulations")
-    st.markdown("---")
+            def norm(s): return (s - s.min()) / (s.max() - s.min() + 1e-9)
+            df["Owner_n"] = norm(df["CostAnnualSysSave_CAD"])
+            df["Gov_n"]   = norm(df["AnnGovtCostSav_CAD"])
+            df["GHG_n"]   = 1 - norm(df["TotalCO2Sav"])
+            df["Score"]   = w_owner*df["Owner_n"] + w_gov*df["Gov_n"] + w_ghg*df["GHG_n"]
+            best = df.sort_values("Score", ascending=False).iloc[0]
 
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.markdown(f"""<div class="result-card">
-            <div class="result-card-title">💰 Owner Savings</div>
-            <div class="result-card-value">${best['CostAnnualSysSave_CAD']:,.0f}</div>
-            <div class="result-card-sub">Per year</div>
+        # Header
+        st.markdown(f'<div class="result-tag">Retrofit Plan · {ssp}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="result-title">{city} — {building_type}</div>', unsafe_allow_html=True)
+
+        # KPIs
+        owner_s = best["CostAnnualSysSave_CAD"]
+        gov_s   = best["AnnGovtCostSav_CAD"]
+        ghg_s   = best["TotalCO2Sav"] / 1000
+        pct_s   = best.get("PercentCostSysSav_percent", 0)
+        st.markdown(f"""
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi-n">${owner_s:,.0f}</div><div class="kpi-l">Owner savings/yr</div></div>
+          <div class="kpi"><div class="kpi-n">${gov_s:,.0f}</div><div class="kpi-l">Gov savings/yr</div></div>
+          <div class="kpi"><div class="kpi-n">{ghg_s:,.1f}t</div><div class="kpi-l">CO₂e / 20 yrs</div></div>
+          <div class="kpi"><div class="kpi-n">{pct_s:.0f}%</div><div class="kpi-l">Energy reduction</div></div>
         </div>""", unsafe_allow_html=True)
-    with m2:
-        st.markdown(f"""<div class="result-card">
-            <div class="result-card-title">🏛️ Gov Savings</div>
-            <div class="result-card-value">${best['AnnGovtCostSav_CAD']:,.0f}</div>
-            <div class="result-card-sub">Per year</div>
-        </div>""", unsafe_allow_html=True)
-    with m3:
-        st.markdown(f"""<div class="result-card">
-            <div class="result-card-title">🌿 GHG Reduction</div>
-            <div class="result-card-value">{best['TotalCO2Sav']/1000:,.1f} t</div>
-            <div class="result-card-sub">CO₂e over 20 years</div>
-        </div>""", unsafe_allow_html=True)
-    with m4:
-        base = best.get('BaseCostAnnual_CAD', 0)
-        pct  = best.get('PercentCostSysSav_percent', 0)
-        st.markdown(f"""<div class="result-card">
-            <div class="result-card-title">📉 Cost Reduction</div>
-            <div class="result-card-value">{pct:.1f}%</div>
-            <div class="result-card-sub">Of annual energy cost</div>
-        </div>""", unsafe_allow_html=True)
 
-    st.markdown("---")
+        # ── Recommended Measures ──────────────────────────────────────────────
+        MEASURES = [
+            {"key":"Rvalue_roof","name":"Roof Insulation Upgrade","icon":"🏠","lo":5.46,"hi":11.0,"unit":"m²K/W","desc":"Increase roof R-value to reduce heat loss and cooling loads.","thr":[7.5,9.0]},
+            {"key":"Rvalue_wall","name":"Wall Insulation Upgrade","icon":"🧱","lo":3.60,"hi":8.00,"unit":"m²K/W","desc":"Improve wall insulation to reduce thermal bridging and heat transfer.","thr":[5.0,6.5]},
+            {"key":"A_PV",       "name":"Rooftop Solar PV",       "icon":"⚡","lo":0.10,"hi":0.60,"unit":"area ratio","desc":"Install PV panels to generate on-site electricity and cut energy costs.","thr":[0.25,0.45]},
+            {"key":"Infiltration","name":"Air Sealing",           "icon":"💨","lo":0.50,"hi":1.50,"unit":"ACH","desc":"Seal air leaks to reduce uncontrolled heat loss and improve comfort.","thr":[1.0,1.3]},
+            {"key":"Glazing",    "name":"Window Upgrade",         "icon":"🪟","lo":0.10,"hi":0.40,"unit":"ratio","desc":"Optimize glazing ratio and upgrade to high-performance windows.","thr":[0.20,0.30]},
+            {"key":"Albedo_roof","name":"Cool Roof Coating",      "icon":"☀️","lo":0.10,"hi":0.70,"unit":"albedo","desc":"High-reflectivity coating reduces solar heat gain through the roof.","thr":[0.35,0.55]},
+            {"key":"A_ST",       "name":"Solar Thermal System",   "icon":"🌡️","lo":0.10,"hi":0.60,"unit":"area ratio","desc":"Solar thermal collectors for domestic hot water — reduces gas use.","thr":[0.25,0.40]},
+            {"key":"V_bites",    "name":"Thermal Energy Storage", "icon":"🧊","lo":0.05,"hi":0.25,"unit":"ratio","desc":"BITES system for load shifting and peak demand reduction.","thr":[0.12,0.20]},
+        ]
 
-    # ── Building retrofits ─────────────────────────────────────────────────────
-    left, right = st.columns(2, gap="large")
+        def get_pri(val, thr):
+            if val >= thr[1]: return "high","HIGH","p-high"
+            if val >= thr[0]: return "medium","MED","p-med"
+            return "low","LOW","p-low"
 
-    BUILDING_RECS = [
-        {
-            "key": "Rvalue_roof", "label": "Roof Insulation",
-            "icon": "🏠", "unit": "m²K/W",
-            "range": (5.46, 11.0),
-            "desc": "Upgrade roof insulation to reduce heat loss in winter and heat gain in summer.",
-            "priority": lambda v: "high" if v > 9 else "medium" if v > 7 else "low"
-        },
-        {
-            "key": "Rvalue_wall", "label": "Wall Insulation",
-            "icon": "🧱", "unit": "m²K/W",
-            "range": (3.60, 8.00),
-            "desc": "Improve wall R-value to reduce thermal bridging and improve envelope performance.",
-            "priority": lambda v: "high" if v > 6.5 else "medium" if v > 5 else "low"
-        },
-        {
-            "key": "Glazing", "label": "Glazing Ratio",
-            "icon": "🪟", "unit": "",
-            "range": (0.10, 0.40),
-            "desc": "Optimize window-to-wall ratio for daylighting while minimizing heat loss.",
-            "priority": lambda v: "medium" if v < 0.20 or v > 0.35 else "low"
-        },
-        {
-            "key": "SHGC", "label": "Solar Heat Gain Coeff.",
-            "icon": "🌤️", "unit": "",
-            "range": (0.10, 0.70),
-            "desc": "Select glazing with appropriate SHGC for your climate zone.",
-            "priority": lambda v: "medium"
-        },
-        {
-            "key": "Infiltration", "label": "Air Tightness",
-            "icon": "💨", "unit": "ACH",
-            "range": (0.50, 1.50),
-            "desc": "Air sealing to reduce uncontrolled infiltration and improve comfort.",
-            "priority": lambda v: "high" if v > 1.2 else "medium" if v > 0.8 else "low"
-        },
-        {
-            "key": "Albedo_roof", "label": "Cool Roof (Albedo)",
-            "icon": "☀️", "unit": "",
-            "range": (0.10, 0.70),
-            "desc": "High-reflectivity roofing reduces cooling loads in summer.",
-            "priority": lambda v: "medium" if v > 0.5 else "low"
-        },
-        {
-            "key": "A_PV", "label": "Photovoltaic System",
-            "icon": "⚡", "unit": "area ratio",
-            "range": (0.10, 0.60),
-            "desc": "Rooftop solar PV to generate on-site electricity and reduce energy costs.",
-            "priority": lambda v: "high" if v > 0.4 else "medium" if v > 0.2 else "low"
-        },
-        {
-            "key": "A_ST", "label": "Solar Thermal System",
-            "icon": "🌡️", "unit": "area ratio",
-            "range": (0.10, 0.60),
-            "desc": "Solar thermal collectors for domestic hot water heating.",
-            "priority": lambda v: "medium" if v > 0.3 else "low"
-        },
-        {
-            "key": "V_bites", "label": "BITES Thermal Storage",
-            "icon": "🧊", "unit": "",
-            "range": (0.05, 0.25),
-            "desc": "Building-Integrated Thermal Energy Storage for load shifting and peak reduction.",
-            "priority": lambda v: "medium" if v > 0.15 else "low"
-        },
-    ]
-
-    ECONOMIC_RECS = [
-        {
-            "key": "Loan", "label": "Recommended Loan",
-            "icon": "🏦", "unit": "$",
-            "range": (0, 10000),
-            "desc": "Suggested loan amount for retrofit financing.",
-            "priority": lambda v: "medium"
-        },
-        {
-            "key": "Rebate", "label": "Eligible Rebate",
-            "icon": "💰", "unit": "$",
-            "range": (20000, 50000),
-            "desc": "Estimated government rebate available for this retrofit package.",
-            "priority": lambda v: "high" if v > 35000 else "medium"
-        },
-        {
-            "key": "IntRate", "label": "Interest Rate",
-            "icon": "📈", "unit": "%",
-            "range": (0.25, 1.50),
-            "desc": "Optimal financing interest rate for this retrofit.",
-            "priority": lambda v: "low"
-        },
-        {
-            "key": "Electax", "label": "Electricity Tax Impact",
-            "icon": "⚡", "unit": "%",
-            "range": (0.0, 10.0),
-            "desc": "Electricity tax rate factored into savings calculations.",
-            "priority": lambda v: "low"
-        },
-        {
-            "key": "Fueltax", "label": "Fuel Tax Impact",
-            "icon": "⛽", "unit": "%",
-            "range": (0.0, 10.0),
-            "desc": "Fuel/carbon tax rate factored into long-term savings.",
-            "priority": lambda v: "medium" if v > 5 else "low"
-        },
-    ]
-
-    def pct_bar(val, lo, hi):
-        pct = max(0, min(100, round((val - lo) / (hi - lo + 1e-9) * 100)))
-        return pct
-
-    def format_val(key, val, unit):
-        if unit == "$":
-            return f"${val:,.0f}"
-        elif unit == "%":
-            return f"{val:.2f}%"
-        elif unit == "ACH":
-            return f"{val:.3f} ACH"
-        elif unit == "m²K/W":
-            return f"{val:.3f} m²K/W"
-        elif unit == "":
+        def fmtv(val, unit):
+            if "m²K/W" in unit: return f"{val:.2f} m²K/W"
+            if unit=="ACH": return f"{val:.3f} ACH"
             return f"{val:.3f}"
-        else:
-            return f"{val:.3f} {unit}"
 
-    with left:
-        st.markdown("#### 🏗️ Building Retrofit Measures")
-        for rec in BUILDING_RECS:
-            key = rec["key"]
-            if key not in best.index:
-                continue
-            val = float(best[key])
-            lo, hi = rec["range"]
-            pct = pct_bar(val, lo, hi)
-            pri = rec["priority"](val)
-            badge_cls = {"high":"badge-high","medium":"badge-med","low":"badge-low"}[pri]
-            badge_txt = pri.upper()
-            val_str = format_val(key, val, rec["unit"])
-
+        st.markdown('<div class="sb-title">🏗️ Recommended Retrofit Measures</div>', unsafe_allow_html=True)
+        for m in MEASURES:
+            if m["key"] not in best.index: continue
+            val = float(best[m["key"]])
+            pct = max(0,min(100,round((val-m["lo"])/(m["hi"]-m["lo"]+1e-9)*100)))
+            _, ptxt, pcls = get_pri(val, m["thr"])
             st.markdown(f"""
-            <div class="rec-card {pri}">
-                <div class="rec-title">
-                    {rec['icon']} {rec['label']}
-                    <span class="badge {badge_cls}">{badge_txt}</span>
-                </div>
-                <div class="rec-value">{val_str}</div>
-                <div class="bar-track"><div class="bar-fill" style="width:{pct}%"></div></div>
-                <div class="rec-desc">{rec['desc']}</div>
+            <div class="rec-item">
+              <div class="rec-icon">{m['icon']}</div>
+              <div class="rec-body">
+                <div class="rec-name">{m['name']} <span class="pbadge {pcls}">{ptxt}</span></div>
+                <div class="rec-val">{fmtv(val,m['unit'])}</div>
+                <div class="rec-desc">{m['desc']}</div>
+              </div>
+              <div class="rec-bar-wrap">
+                <div class="rec-bar-track"><div class="rec-bar-fill" style="width:{pct}%"></div></div>
+                <div class="rec-bar-pct">{pct}%</div>
+              </div>
             </div>""", unsafe_allow_html=True)
 
-    with right:
-        st.markdown("#### 💰 Economic Parameters")
-        for rec in ECONOMIC_RECS:
-            key = rec["key"]
-            if key not in best.index:
-                continue
-            val = float(best[key])
-            lo, hi = rec["range"]
-            pct = pct_bar(val, lo, hi)
-            pri = rec["priority"](val)
-            badge_cls = {"high":"badge-high","medium":"badge-med","low":"badge-low"}[pri]
-            badge_txt = pri.upper()
-            val_str = format_val(key, val, rec["unit"])
+        # ── Incentives ────────────────────────────────────────────────────────
+        rebate = float(best.get("Rebate", 35000))
+        loan   = float(best.get("Loan",   5000))
 
+        st.markdown('<div class="sb-title">💰 Incentives & Financing</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="incentive-item">
+          <div class="incentive-icon">🏛️</div>
+          <div><div class="incentive-name">Canada Greener Homes Grant</div>
+          <div class="incentive-desc">Up to $5,600 for insulation, windows, doors, heat pumps, and renewable energy systems.</div></div>
+        </div>
+        <div class="incentive-item">
+          <div class="incentive-icon">🏦</div>
+          <div><div class="incentive-name">Canada Greener Homes Loan</div>
+          <div class="incentive-desc">Interest-free loans up to $40,000 for deep energy retrofits.</div></div>
+        </div>
+        <div class="incentive-item">
+          <div class="incentive-icon">💰</div>
+          <div><div class="incentive-name">Estimated Package for This Building</div>
+          <div class="incentive-desc">Rebate: <strong>${rebate:,.0f}</strong> · Loan: <strong>${loan:,.0f}</strong> — based on your building profile and the optimal retrofit package from our simulation database.</div></div>
+        </div>""", unsafe_allow_html=True)
+
+        # ── Roadmap ───────────────────────────────────────────────────────────
+        insulation_bad = "Poor" in insulation or "Moderate" in insulation
+        gas_heat       = "Gas" in heating or "Oil" in heating
+        single_pane    = windows == "Single-pane"
+
+        p1 = ["Professional energy audit", "Air sealing and draught-proofing"]
+        if insulation_bad: p1.append("Attic insulation upgrade")
+
+        p2 = ["HVAC tune-up and maintenance"]
+        if gas_heat: p2.append("Heat pump installation (replace gas/oil)")
+        if single_pane: p2.append("Window replacement to double or triple-pane")
+        if insulation_bad: p2.append("Wall insulation upgrade")
+
+        p3 = ["Rooftop solar PV system", "Solar thermal for hot water", "Building energy management system"]
+
+        st.markdown('<div class="sb-title">🗓️ Implementation Roadmap</div>', unsafe_allow_html=True)
+        for i,(phase,timeline,items) in enumerate([
+            ("Quick Wins","0–6 months",p1),
+            ("Medium Term","6–24 months",p2),
+            ("Long Term","2–5 years",p3)
+        ]):
+            items_html = "".join(f"<li>{it}</li>" for it in items)
             st.markdown(f"""
-            <div class="rec-card {pri}">
-                <div class="rec-title">
-                    {rec['icon']} {rec['label']}
-                    <span class="badge {badge_cls}">{badge_txt}</span>
-                </div>
-                <div class="rec-value">{val_str}</div>
-                <div class="bar-track"><div class="bar-fill" style="width:{pct}%"></div></div>
-                <div class="rec-desc">{rec['desc']}</div>
+            <div class="roadmap-step">
+              <div class="roadmap-num">{i+1}</div>
+              <div>
+                <div class="roadmap-phase">{phase} · {timeline}</div>
+                <div class="roadmap-title"><ul style="margin:4px 0 0 16px;line-height:1.7">{items_html}</ul></div>
+              </div>
             </div>""", unsafe_allow_html=True)
 
-        # ── Comparison to dataset average ─────────────────────────────────────
-        st.markdown("---")
-        st.markdown("#### 📊 How This Plan Compares")
-        avg_owner = df["CostAnnualSysSave_CAD"].mean()
-        avg_ghg   = df["TotalCO2Sav"].mean()
-        owner_pct = ((best["CostAnnualSysSave_CAD"] - avg_owner) / avg_owner * 100)
-        ghg_pct   = ((best["TotalCO2Sav"] - avg_ghg) / avg_ghg * 100)
-
-        st.metric(
-            "Owner Savings vs Average Plan",
-            f"${best['CostAnnualSysSave_CAD']:,.0f}",
-            f"{owner_pct:+.1f}% vs avg ${avg_owner:,.0f}"
-        )
-        st.metric(
-            "GHG Reduction vs Average Plan",
-            f"{best['TotalCO2Sav']/1000:,.1f} tCO₂e",
-            f"{ghg_pct:+.1f}% vs avg {avg_ghg/1000:,.1f} tCO₂e"
-        )
-
-    st.markdown("---")
-    st.info("💡 This plan is based on real building simulation data from the Madadiz research database. "
-            "For a detailed on-site energy audit and implementation support, "
-            "contact [Madadiz Inc.](https://madadiz.com/contact.html)")
+        st.markdown("""
+        <div class="disclaimer">
+          <strong>Note:</strong> This plan is generated from real building simulation data and is a starting point.
+          For a detailed on-site energy audit and professional implementation support,
+          <a href="https://madadiz.com/contact.html">contact Madadiz Inc.</a>
+        </div>""", unsafe_allow_html=True)
