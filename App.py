@@ -533,26 +533,71 @@ if run and selected:
         )
         st.plotly_chart(fig_radar, use_container_width=True)
 
-    with ch3:
-        sample_plot = df.sample(min(400, len(df)), random_state=1)
-        fig_par = px.scatter(
-            sample_plot, x="Owner", y="GHG",
-            color="Score", color_continuous_scale=["#e2e8f0","#1a1a2e"],
-            opacity=0.6, title="Pareto space",
-            labels={"Owner":"Owner savings ($)","GHG":"GHG (tCO₂e/yr)"},
-        )
-        fig_par.add_scatter(
-            x=[best["Owner"]], y=[best["GHG"]], mode="markers",
-            marker=dict(size=14, color="#b91c1c", symbol="star"),
-            name="Best", showlegend=False,
-        )
-        fig_par.update_layout(
-            margin=dict(t=40,b=10,l=10,r=10), height=230,
-            plot_bgcolor="white", paper_bgcolor="white",
-            coloraxis_showscale=False,
-            font=dict(color="#0a0a0a", size=12),
-            title=dict(font=dict(size=14, color="#0a0a0a")),
-            xaxis=dict(showgrid=False, tickfont=dict(size=11, color="#0a0a0a")),
-            yaxis=dict(showgrid=False, tickfont=dict(size=11, color="#0a0a0a")),
-        )
-        st.plotly_chart(fig_par, use_container_width=True)
+with ch3:
+    sample_plot = df.sample(min(400, len(df)), random_state=1)
+
+    fig_par = go.Figure()
+
+    # All simulation points
+    fig_par.add_trace(go.Scatter3d(
+        x=sample_plot["Owner"],
+        y=sample_plot["Gov"],
+        z=sample_plot["GHG"] / 1000,
+        mode="markers",
+        marker=dict(
+            size=3,
+            color=sample_plot["Score"],
+            colorscale=["#e2e8f0", "#1a1a2e"],
+            opacity=0.5,
+            showscale=False,
+        ),
+        name="Simulations",
+        hovertemplate=(
+            "Owner: $%{x:,.0f}<br>"
+            "Gov: $%{y:,.0f}<br>"
+            "GHG: %{z:,.1f} tCO₂e<br>"
+            "<extra></extra>"
+        ),
+    ))
+
+    # Best point
+    fig_par.add_trace(go.Scatter3d(
+        x=[best["Owner"]],
+        y=[best["Gov"]],
+        z=[best["GHG"] / 1000],
+        mode="markers",
+        marker=dict(size=10, color="#b91c1c", symbol="diamond"),
+        name="Best",
+        hovertemplate=(
+            "⭐ Best solution<br>"
+            "Owner: $%{x:,.0f}<br>"
+            "Gov: $%{y:,.0f}<br>"
+            "GHG: %{z:,.1f} tCO₂e<br>"
+            "<extra></extra>"
+        ),
+    ))
+
+    fig_par.update_layout(
+        title=dict(text="Pareto space (3 objectives)", font=dict(size=14, color="#0a0a0a")),
+        height=350,
+        margin=dict(t=40, b=10, l=10, r=10),
+        paper_bgcolor="white",
+        font=dict(color="#0a0a0a", size=11),
+        scene=dict(
+            xaxis=dict(title="Owner savings ($)", backgroundcolor="white",
+                       gridcolor="#e2e8f0", showbackground=True,
+                       titlefont=dict(size=10), tickfont=dict(size=9)),
+            yaxis=dict(title="Gov savings ($)", backgroundcolor="white",
+                       gridcolor="#e2e8f0", showbackground=True,
+                       titlefont=dict(size=10), tickfont=dict(size=9)),
+            zaxis=dict(title="GHG (tCO₂e)", backgroundcolor="white",
+                       gridcolor="#e2e8f0", showbackground=True,
+                       titlefont=dict(size=10), tickfont=dict(size=9)),
+        ),
+        legend=dict(
+            x=0.01, y=0.99,
+            font=dict(size=10),
+            bgcolor="rgba(255,255,255,0.8)",
+        ),
+    )
+    st.plotly_chart(fig_par, use_container_width=True)
