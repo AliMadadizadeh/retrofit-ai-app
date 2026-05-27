@@ -199,9 +199,9 @@ BUILDING_VARS = {
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": r"—",                         "symbol": r"SHGC",              "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": r"ACH",                    "symbol": r"\dot{m}_{\inf}",    "icon": "💨"},
     "Albedo_roof":  {"label": "Roof albedo",              "unit": r"—",                         "symbol": r"\alpha",            "icon": "☀️"},
-    "A_PV":         {"label": "PV area ratio",            "unit": r"m^2 m^W^{-1}",                         "symbol": r"A_{\text{PV}}",     "icon": "⚡"},
-    "A_ST":         {"label": "Solar thermal area",       "unit": r"m^2 m^W^{-1}",                         "symbol": r"A_{\text{ST}}",     "icon": "🌡️"},
-    "V_bites":      {"label": "BITES system",             "unit": r"m^3 m^W^{-1}",                         "symbol": r"V_{\text{BITES}}",  "icon": "🧊"},
+    "A_PV":         {"label": "PV area ratio",            "unit": r"m^2 m^{-2}",                         "symbol": r"A_{\text{PV}}",     "icon": "⚡"},
+    "A_ST":         {"label": "Solar thermal area",       "unit": r"m^2 m^{-2}",                         "symbol": r"A_{\text{ST}}",     "icon": "🌡️"},
+    "V_bites":      {"label": "BITES system",             "unit": r"m^3 m^{-2}",                         "symbol": r"V_{\text{BITES}}",  "icon": "🧊"},
 }
 
 ECONOMIC_VARS = {
