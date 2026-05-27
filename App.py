@@ -193,8 +193,8 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K/W", "symbol": "R_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K/W", "symbol": "R_wall",  "icon": "🧱"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K$W^-1$", "symbol": "R_roof",  "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K$W^-1$", "symbol": "R_wall",  "icon": "🧱"},
     "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "GR",       "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
     "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
