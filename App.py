@@ -193,23 +193,23 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": "m²K$W^-1$", "symbol": "R_roof",  "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": "m²K$W^{-1}$", "symbol": "R_wall",  "icon": "🧱"},
-    "Glazing":      {"label": "Glazing ratio",            "unit": "—",     "symbol": "GR",       "icon": "🪟"},
-    "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": "—",     "symbol": "SHGC",    "icon": "🌤️"},
-    "Infiltration": {"label": "Infiltration rate",        "unit": "ACH",   "symbol": "ṁ_inf",   "icon": "💨"},
-    "Albedo_roof":  {"label": "Roof albedo",              "unit": "—",     "symbol": "α",       "icon": "☀️"},
-    "A_PV":         {"label": "PV area ratio",            "unit": "—",     "symbol": "A_PV",    "icon": "⚡"},
-    "A_ST":         {"label": "Solar thermal area",       "unit": "—",     "symbol": "A_ST",    "icon": "🌡️"},
-    "V_bites":      {"label": "BITES system",             "unit": "—",     "symbol": "V_BITES", "icon": "🧊"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": r"m^2 \cdot K \cdot W^{-1}", "symbol": r"R_{\text{roof}}",   "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": r"m^2 \cdot K \cdot W^{-1}", "symbol": r"R_{\text{wall}}",   "icon": "🧱"},
+    "Glazing":      {"label": "Glazing ratio",            "unit": r"—",                         "symbol": r"GR",                "icon": "🪟"},
+    "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": r"—",                         "symbol": r"SHGC",              "icon": "🌤️"},
+    "Infiltration": {"label": "Infiltration rate",        "unit": r"h^{-1}",                    "symbol": r"\dot{m}_{\inf}",    "icon": "💨"},
+    "Albedo_roof":  {"label": "Roof albedo",              "unit": r"—",                         "symbol": r"\alpha",            "icon": "☀️"},
+    "A_PV":         {"label": "PV area ratio",            "unit": r"—",                         "symbol": r"A_{\text{PV}}",     "icon": "⚡"},
+    "A_ST":         {"label": "Solar thermal area",       "unit": r"—",                         "symbol": r"A_{\text{ST}}",     "icon": "🌡️"},
+    "V_bites":      {"label": "BITES system",             "unit": r"—",                         "symbol": r"V_{\text{BITES}}",  "icon": "🧊"},
 }
 
 ECONOMIC_VARS = {
-    "Loan":         {"label": "Loan amount",              "unit": "$",     "symbol": "L",       "icon": "🏦"},
-    "Rebate":       {"label": "Rebate amount",            "unit": "$",     "symbol": "R",       "icon": "💰"},
-    "IntRate":      {"label": "Interest rate",            "unit": "%",     "symbol": "i",       "icon": "📈"},
-    "Electax":      {"label": "Electricity tax",          "unit": "%", "symbol": "τ_e",     "icon": "⚡"},
-    "Fueltax":      {"label": "Fuel tax",                 "unit": "%",  "symbol": "τ_f",     "icon": "⛽"},
+    "Loan":         {"label": "Loan amount",     "unit": "$",  "symbol": r"L",          "icon": "🏦"},
+    "Rebate":       {"label": "Rebate amount",   "unit": "$",  "symbol": r"R",          "icon": "💰"},
+    "IntRate":      {"label": "Interest rate",   "unit": r"\%","symbol": r"i",          "icon": "📈"},
+    "Electax":      {"label": "Electricity tax", "unit": r"\%","symbol": r"\tau_{e}",   "icon": "⚡"},
+    "Fueltax":      {"label": "Fuel tax",        "unit": r"\%","symbol": r"\tau_{f}",   "icon": "⛽"},
 }
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
@@ -420,37 +420,31 @@ if run and selected:
     st.markdown("---")
 
     # ─────────────────────────────────────────────
-    # VARIABLE CARD RENDERER
+    # VARIABLE CARD RENDERER  (LaTeX symbols + units)
     # ─────────────────────────────────────────────
     def var_card(k, meta, best_val, is_economic=False):
         lo_v, hi_v = RANGES[k]
         pct = round((best_val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
         pct = max(0, min(100, pct))
 
+        # ── numeric value string (no unit text — unit shown via LaTeX below) ──
         if k in ("Loan", "Rebate") or meta["unit"] == "$":
             val_str = f"${best_val:,.0f}"
-        elif meta["unit"] == "%":
-            val_str = f"{best_val:.2f}%"
+        elif meta["unit"] in ("%", r"\%"):
+            val_str = f"{best_val:.2f} %"
         else:
-            val_str = f"{best_val:.3f} {meta['unit'] if meta['unit'] != '—' else ''}"
+            val_str = f"{best_val:.3f}"
 
-        range_str = f"{lo_v} – {hi_v}"
-        if meta["unit"] not in ("—", "$", "%"):
-            range_str += f" {meta['unit']}"
+        icon_class = "var-icon-economic" if is_economic else "var-icon-building"
+        bar_color  = "#78350f"  if is_economic else "#1a1a2e"
 
-        icon_class   = "var-icon-economic" if is_economic else "var-icon-building"
-        symbol_class = "var-symbol var-symbol-econ" if is_economic else "var-symbol"
-        bar_color    = "#78350f" if is_economic else "#1a1a2e"
-
-        return f"""
+        # ── render the card HTML (no symbol/unit text inside HTML) ────────────
+        st.markdown(f"""
         <div class="var-card">
           <div class="var-icon {icon_class}">{meta['icon']}</div>
           <div class="var-info">
-            <div class="var-label">
-              <span class="{symbol_class}">{meta['symbol']}</span>{meta['label']}
-            </div>
+            <div class="var-label">{meta['label']}</div>
             <div class="var-value">{val_str}</div>
-            <div class="var-range">Range: {range_str}</div>
           </div>
           <div class="bar-wrap">
             <div class="bar-track">
@@ -458,7 +452,25 @@ if run and selected:
             </div>
             <div class="bar-pct">{pct}%</div>
           </div>
-        </div>"""
+        </div>""", unsafe_allow_html=True)
+
+        # ── render symbol and unit via LaTeX ──────────────────────────────────
+        sym  = meta["symbol"]
+        unit = meta["unit"]
+        if unit not in ("—", "$"):
+            st.markdown(
+                f"$\\quad {sym}$ &nbsp;&nbsp; "
+                f"<span style='font-size:11px;color:#64748b;'>"
+                f"Unit: ${unit}$ &nbsp;|&nbsp; Range: {lo_v} – {hi_v}</span>",
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f"$\\quad {sym}$ &nbsp;&nbsp; "
+                f"<span style='font-size:11px;color:#64748b;'>"
+                f"Range: {lo_v} – {hi_v}</span>",
+                unsafe_allow_html=True
+            )
 
     # ── Two result columns ─────────────────────────
     col_build, col_econ = st.columns(2, gap="large")
@@ -466,20 +478,14 @@ if run and selected:
     with col_build:
         st.markdown('<div class="result-group-title">🏗️ Building features</div>',
                     unsafe_allow_html=True)
-        html = "".join(
+        for k, meta in BUILDING_VARS.items():
             var_card(k, meta, float(best[k]), is_economic=False)
-            for k, meta in BUILDING_VARS.items()
-        )
-        st.markdown(html, unsafe_allow_html=True)
 
     with col_econ:
         st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
                     unsafe_allow_html=True)
-        html = "".join(
+        for k, meta in ECONOMIC_VARS.items():
             var_card(k, meta, float(best[k]), is_economic=True)
-            for k, meta in ECONOMIC_VARS.items()
-        )
-        st.markdown(html, unsafe_allow_html=True)
 
     st.markdown("---")
 
