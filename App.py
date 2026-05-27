@@ -193,15 +193,15 @@ RANGES = {
 }
 
 BUILDING_VARS = {
-    "Rvalue_roof":  {"label": "Roof R-value",             "unit": r"m^2 K W^{-1}", "symbol": r"R_{\text{roof}}",   "icon": "🏠"},
-    "Rvalue_wall":  {"label": "Wall R-value",             "unit": r"m^2 K W^{-1}", "symbol": r"R_{\text{wall}}",   "icon": "🧱"},
+    "Rvalue_roof":  {"label": "Roof R-value",             "unit": r"m^2 \cdot K \cdot W^{-1}", "symbol": r"R_{\text{roof}}",   "icon": "🏠"},
+    "Rvalue_wall":  {"label": "Wall R-value",             "unit": r"m^2 \cdot K \cdot W^{-1}", "symbol": r"R_{\text{wall}}",   "icon": "🧱"},
     "Glazing":      {"label": "Glazing ratio",            "unit": r"—",                         "symbol": r"GR",                "icon": "🪟"},
     "SHGC":         {"label": "Solar Heat Gain Coeff.",   "unit": r"—",                         "symbol": r"SHGC",              "icon": "🌤️"},
-    "Infiltration": {"label": "Infiltration rate",        "unit": r"ACH",                    "symbol": r"\dot{m}_{\inf}",    "icon": "💨"},
+    "Infiltration": {"label": "Infiltration rate",        "unit": r"h^{-1}",                    "symbol": r"\dot{m}_{\inf}",    "icon": "💨"},
     "Albedo_roof":  {"label": "Roof albedo",              "unit": r"—",                         "symbol": r"\alpha",            "icon": "☀️"},
-    "A_PV":         {"label": "PV area ratio",            "unit": r"m^2 m^{-2}",                         "symbol": r"A_{\text{PV}}",     "icon": "⚡"},
-    "A_ST":         {"label": "Solar thermal area",       "unit": r"m^2 m^{-2}",                         "symbol": r"A_{\text{ST}}",     "icon": "🌡️"},
-    "V_bites":      {"label": "BITES system",             "unit": r"m^3 m^{-2}",                         "symbol": r"V_{\text{BITES}}",  "icon": "🧊"},
+    "A_PV":         {"label": "PV area ratio",            "unit": r"—",                         "symbol": r"A_{\text{PV}}",     "icon": "⚡"},
+    "A_ST":         {"label": "Solar thermal area",       "unit": r"—",                         "symbol": r"A_{\text{ST}}",     "icon": "🌡️"},
+    "V_bites":      {"label": "BITES system",             "unit": r"—",                         "symbol": r"V_{\text{BITES}}",  "icon": "🧊"},
 }
 
 ECONOMIC_VARS = {
@@ -533,71 +533,86 @@ if run and selected:
         )
         st.plotly_chart(fig_radar, use_container_width=True)
 
-with ch3:
-    sample_plot = df.sample(min(400, len(df)), random_state=1)
+    with ch3:
+        sample_plot = df.sample(min(400, len(df)), random_state=1)
 
-    fig_par = go.Figure()
+        fig_par = go.Figure()
 
-    # All simulation points
-    fig_par.add_trace(go.Scatter3d(
-        x=sample_plot["Owner"],
-        y=sample_plot["Gov"],
-        z=sample_plot["GHG"] / 1000,
-        mode="markers",
-        marker=dict(
-            size=3,
-            color=sample_plot["Score"],
-            colorscale=["#e2e8f0", "#1a1a2e"],
-            opacity=0.5,
-            showscale=False,
-        ),
-        name="Simulations",
-        hovertemplate=(
-            "Owner: $%{x:,.0f}<br>"
-            "Gov: $%{y:,.0f}<br>"
-            "GHG: %{z:,.1f} tCO₂e<br>"
-            "<extra></extra>"
-        ),
-    ))
+        # All simulation points
+        fig_par.add_trace(go.Scatter3d(
+            x=sample_plot["Owner"],
+            y=sample_plot["Gov"],
+            z=sample_plot["GHG"] / 1000,
+            mode="markers",
+            marker=dict(
+                size=3,
+                color=sample_plot["Score"],
+                colorscale=["#e2e8f0", "#1a1a2e"],
+                opacity=0.5,
+                showscale=False,
+            ),
+            name="Simulations",
+            hovertemplate=(
+                "Owner: $%{x:,.0f}<br>"
+                "Gov: $%{y:,.0f}<br>"
+                "GHG: %{z:,.1f} tCO₂e<br>"
+                "<extra></extra>"
+            ),
+        ))
 
-    # Best point
-    fig_par.add_trace(go.Scatter3d(
-        x=[best["Owner"]],
-        y=[best["Gov"]],
-        z=[best["GHG"] / 1000],
-        mode="markers",
-        marker=dict(size=10, color="#b91c1c", symbol="diamond"),
-        name="Best",
-        hovertemplate=(
-            "⭐ Best solution<br>"
-            "Owner: $%{x:,.0f}<br>"
-            "Gov: $%{y:,.0f}<br>"
-            "GHG: %{z:,.1f} tCO₂e<br>"
-            "<extra></extra>"
-        ),
-    ))
+        # Best point
+        fig_par.add_trace(go.Scatter3d(
+            x=[best["Owner"]],
+            y=[best["Gov"]],
+            z=[best["GHG"] / 1000],
+            mode="markers",
+            marker=dict(size=10, color="#b91c1c", symbol="diamond"),
+            name="Best",
+            hovertemplate=(
+                "⭐ Best solution<br>"
+                "Owner: $%{x:,.0f}<br>"
+                "Gov: $%{y:,.0f}<br>"
+                "GHG: %{z:,.1f} tCO₂e<br>"
+                "<extra></extra>"
+            ),
+        ))
 
-    fig_par.update_layout(
-        title=dict(text="Pareto space (3 objectives)", font=dict(size=14, color="#0a0a0a")),
-        height=350,
-        margin=dict(t=40, b=10, l=10, r=10),
-        paper_bgcolor="white",
-        font=dict(color="#0a0a0a", size=11),
-        scene=dict(
-            xaxis=dict(title="Owner savings ($)", backgroundcolor="white",
-                       gridcolor="#e2e8f0", showbackground=True,
-                       titlefont=dict(size=10), tickfont=dict(size=9)),
-            yaxis=dict(title="Gov savings ($)", backgroundcolor="white",
-                       gridcolor="#e2e8f0", showbackground=True,
-                       titlefont=dict(size=10), tickfont=dict(size=9)),
-            zaxis=dict(title="GHG (tCO₂e)", backgroundcolor="white",
-                       gridcolor="#e2e8f0", showbackground=True,
-                       titlefont=dict(size=10), tickfont=dict(size=9)),
-        ),
-        legend=dict(
-            x=0.01, y=0.99,
-            font=dict(size=10),
-            bgcolor="rgba(255,255,255,0.8)",
-        ),
-    )
-    st.plotly_chart(fig_par, use_container_width=True)
+        fig_par.update_layout(
+            title=dict(text="Pareto space (3 objectives)", font=dict(size=14, color="#0a0a0a")),
+            height=350,
+            margin=dict(t=40, b=10, l=10, r=10),
+            paper_bgcolor="white",
+            font=dict(color="#0a0a0a", size=11),
+            scene=dict(
+                xaxis=dict(
+                    title="Owner savings ($)",
+                    backgroundcolor="white",
+                    gridcolor="#e2e8f0",
+                    showbackground=True,
+                    titlefont=dict(size=10),
+                    tickfont=dict(size=9),
+                ),
+                yaxis=dict(
+                    title="Gov savings ($)",
+                    backgroundcolor="white",
+                    gridcolor="#e2e8f0",
+                    showbackground=True,
+                    titlefont=dict(size=10),
+                    tickfont=dict(size=9),
+                ),
+                zaxis=dict(
+                    title="GHG (tCO₂e)",
+                    backgroundcolor="white",
+                    gridcolor="#e2e8f0",
+                    showbackground=True,
+                    titlefont=dict(size=10),
+                    tickfont=dict(size=9),
+                ),
+            ),
+            legend=dict(
+                x=0.01, y=0.99,
+                font=dict(size=10),
+                bgcolor="rgba(255,255,255,0.8)",
+            ),
+        )
+        st.plotly_chart(fig_par, use_container_width=True)
