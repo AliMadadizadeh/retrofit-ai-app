@@ -825,8 +825,8 @@ with tab_arch:
             COL_WEIGHT_OWNER: 0.60,
             COL_WEIGHT_GOV:   0.20,
             COL_WEIGHT_GHG:   0.20,
-            COL_ELEC_INFL:    0.10,
-            COL_FUEL_INFL:    0.10,
+            COL_ELEC_INFL:    0.01,
+            COL_FUEL_INFL:    0.01,
             COL_FOOTPRINT:    130.0,  # fixed default (matches the city tab), overrides the archetype table value
         }
 
