@@ -214,6 +214,12 @@ ECONOMIC_VARS = {
 
 ALL_VARS = {**BUILDING_VARS, **ECONOMIC_VARS}
 
+OUTPUT_COLS_ALL = [
+    "TotalOperationalCO2Save_kgCO2", "TotalEmbodiedCO2_kgCO2",
+    "CostAnnualSysSave_CAD", "TotalCO2Sav", "AnnSCCSav_CAD",
+    "BaseCostAnnual_CAD", "PercentCostSysSav_percent", "AnnGovtCostSav_CAD",
+]
+
 # ─────────────────────────────────────────
 # SHARED OUTPUT METADATA / FORMATTING — used by both tabs' result cards
 # ─────────────────────────────────────────
@@ -296,6 +302,65 @@ def load_city_models():
 city_models, missing_cities = load_city_models()
 model_ok = len(city_models) > 0
 
+# ─────────────────────────────────────────
+# Shared: extrapolation warning (used by both tabs)
+# ─────────────────────────────────────────
+def check_out_of_range(input_values, ranges_dict, label_lookup):
+    out = []
+    for k, v in input_values.items():
+        if k in ranges_dict:
+            lo, hi = ranges_dict[k]
+            if v < lo or v > hi:
+                out.append((label_lookup(k), v, lo, hi))
+    return out
+
+def render_range_warning(out_of_range):
+    if not out_of_range:
+        return
+    bits = "; ".join(f"**{label}** = {v:g} (trained range {lo:g}–{hi:g})" for label, v, lo, hi in out_of_range)
+    st.warning(
+        f"⚠️ Extrapolating beyond the training data for: {bits}. "
+        f"The model has never seen values in this zone — treat this prediction as a rough "
+        f"guess, not a verified estimate."
+    )
+
+# ─────────────────────────────────────────
+# City model prediction — calls the actual RBFInterpolator .pkl, same idea
+# as the archetype tab's LinearRegression calls.
+# ─────────────────────────────────────────
+def predict_city(city, ssp, footprint, elec_inf, fuel_inf, be_values):
+    """Single-point prediction. be_values: dict of the 14 BUILDING_VARS+ECONOMIC_VARS."""
+    bundle = city_models[city]
+    rbf, scaler, columns = bundle["rbf"], bundle["scaler"], bundle["columns"]
+    row = {
+        "SSP": ssp,
+        "BuildingFootprintArea_m2": footprint,
+        "ElectricityInflationRate": elec_inf,
+        "FuelInflationRate": fuel_inf,
+    }
+    row.update(be_values)
+    row_df = pd.DataFrame([row])
+    row_df = pd.get_dummies(row_df, columns=["SSP"])
+    row_df = row_df.reindex(columns=columns, fill_value=0)
+    X_sc = scaler.transform(row_df.values.astype(float))
+    pred = rbf(X_sc)[0]
+    return dict(zip(OUTPUT_COLS_ALL, pred.tolist()))
+
+def predict_city_batch(city, ssp, footprint, elec_inf, fuel_inf, be_df):
+    """Batch prediction. be_df: DataFrame with the 14 BUILDING_VARS+ECONOMIC_VARS columns."""
+    bundle = city_models[city]
+    rbf, scaler, columns = bundle["rbf"], bundle["scaler"], bundle["columns"]
+    full = be_df.copy()
+    full["SSP"] = ssp
+    full["BuildingFootprintArea_m2"] = footprint
+    full["ElectricityInflationRate"] = elec_inf
+    full["FuelInflationRate"] = fuel_inf
+    full = pd.get_dummies(full, columns=["SSP"])
+    full = full.reindex(columns=columns, fill_value=0)
+    X_sc = scaler.transform(full.values.astype(float))
+    preds = rbf(X_sc)
+    return pd.DataFrame(preds, columns=OUTPUT_COLS_ALL)
+
 if "selected_city" not in st.session_state:
     st.session_state.selected_city = None
 
@@ -324,6 +389,12 @@ def load_archetype_model():
 arch_bundle, arch_stats = load_archetype_model()
 archetype_model_ok = arch_bundle is not None
 
+def arch_model_predict(X_sc):
+    """Model-agnostic prediction: sklearn models expose .predict(); scipy
+    RBFInterpolator is directly callable. Works with both bundle types."""
+    m = arch_bundle["model"]
+    return m.predict(X_sc) if hasattr(m, "predict") else m(X_sc)
+
 # ─────────────────────────────────────────
 # HEADER + TABS
 # ─────────────────────────────────────────
@@ -333,6 +404,29 @@ st.caption("Two tools in one app: an optimizer by city, and a plain regression p
 tab_city, tab_arch = st.tabs(["🏙️ By City — Optimizer", "📐 By Archetype — Predictor"])
 
 with tab_city:
+    # ── Seed default input values once, and apply any pending optimizer
+    # result BEFORE the matching widgets are created (same pattern as the
+    # archetype tab — Streamlit forbids writing to a widget's session_state
+    # key after that widget has already been instantiated this run). ────────
+    def _ensure_city_defaults():
+        for _k in ALL_VARS:
+            _key = f"city_in_{_k}"
+            if _key not in st.session_state:
+                _lo, _hi = RANGES[_k]
+                st.session_state[_key] = round((_lo + _hi) / 2, 3)
+        st.session_state.setdefault("city_footprint", 130.0)
+        st.session_state.setdefault("city_ssp", "SSP245")
+        st.session_state.setdefault("city_elec_inf", 0.01)
+        st.session_state.setdefault("city_fuel_inf", 0.05)
+
+    _ensure_city_defaults()
+
+    if "_city_pending" in st.session_state:
+        _cpending = st.session_state.pop("_city_pending")
+        for _k, _v in _cpending["be_values"].items():
+            st.session_state[f"city_in_{_k}"] = float(_v)
+        st.session_state["_city_show_optimized"] = _cpending
+
     st.markdown("### 🏙️ City Optimizer")
     st.caption("Click a city on the map, configure parameters, and run the optimizer.")
 
@@ -428,18 +522,35 @@ with tab_city:
 
     with ctrl_col:
         st.markdown('<div class="section-label">Building parameters</div>', unsafe_allow_html=True)
-        footprint = st.number_input("Building footprint (m²)", value=130, min_value=30, max_value=2000, step=10)
-        ssp       = st.selectbox("SSP Scenario", ["SSP126","SSP245","SSP585"], index=1)
+        footprint = st.number_input("Building footprint (m²)", min_value=1.0, step=10.0, format="%.0f",
+                                     key="city_footprint")
+        ssp       = st.selectbox("SSP Scenario", ["SSP126", "SSP245", "SSP585"], key="city_ssp")
 
         st.markdown('<div class="section-label" style="margin-top:12px;">Inflation rates</div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
-        elec_inf = c1.number_input("Electricity", value=0.01, min_value=0.0, max_value=0.5, step=0.005, format="%.3f")
-        fuel_inf = c2.number_input("Fuel",        value=0.05, min_value=0.0, max_value=0.5, step=0.005, format="%.3f")
+        elec_inf = c1.number_input("Electricity", min_value=0.0, step=0.005, format="%.3f",
+                                    key="city_elec_inf")
+        fuel_inf = c2.number_input("Fuel", min_value=0.0, step=0.005, format="%.3f",
+                                    key="city_fuel_inf")
+
+        st.markdown('<div class="section-label" style="margin-top:12px;">Retrofit parameters</div>', unsafe_allow_html=True)
+        st.caption(
+            "Used as-is by “Predict these exact values”. “Find recommended retrofit” "
+            "searches its own random combinations within each variable's trained range "
+            "instead, ignoring these."
+        )
+        for _k, _meta in ALL_VARS.items():
+            _lo, _hi = RANGES[_k]
+            _step = round(max((_hi - _lo) / 100, 0.001), 4)
+            st.number_input(
+                _meta["label"], step=_step, format="%.4f",
+                key=f"city_in_{_k}", help=f"Approx. training range: {_lo} – {_hi}",
+            )
 
         st.markdown('<div class="section-label" style="margin-top:12px;">Objective weights</div>', unsafe_allow_html=True)
-        w_owner = st.slider("🏠 Owner savings", 0.0, 1.0, 0.60, 0.05)
-        w_gov   = st.slider("🏛️ Gov savings",   0.0, 1.0, 0.20, 0.05)
-        w_ghg   = st.slider("🌿 GHG reduction", 0.0, 1.0, 0.20, 0.05)
+        w_owner = st.slider("🏠 Owner savings", 0.0, 1.0, 0.60, 0.05, key="city_w_owner")
+        w_gov   = st.slider("🏛️ Gov savings",   0.0, 1.0, 0.20, 0.05, key="city_w_gov")
+        w_ghg   = st.slider("🌿 GHG reduction", 0.0, 1.0, 0.20, 0.05, key="city_w_ghg")
 
         wsum = round(w_owner + w_gov + w_ghg, 2)
         if abs(wsum - 1.0) > 0.01:
@@ -450,12 +561,16 @@ with tab_city:
             st.success(f"Weights ✓ ({wsum:.2f})")
             weights_ok = True
 
-        # ── CHANGED: check city has a model loaded ────────────────────────────────
         city_has_model = selected in city_models
-        ready = selected and weights_ok and model_ok and city_has_model
-        run = st.button(
-            f"▶ Find best retrofit{' for ' + selected if selected else ''}",
-            type="primary", use_container_width=True, disabled=not ready,
+        ready = bool(selected) and weights_ok and model_ok and city_has_model
+
+        predict_clicked = st.button(
+            "▶ Predict these exact values", use_container_width=True,
+            disabled=not ready, key="city_predict_btn",
+        )
+        optimize_clicked = st.button(
+            f"🔍 Find recommended retrofit{' for ' + selected if selected else ''}",
+            type="primary", use_container_width=True, disabled=not ready, key="city_optimize_btn",
         )
         if not selected:
             st.caption("← Select a city on the map first")
@@ -463,275 +578,249 @@ with tab_city:
             st.caption(f"⚠️ No model file found for {selected}")
 
     # ─────────────────────────────────────────
-    # OPTIMIZATION
+    # SHARED RESULT RENDERER
     # ─────────────────────────────────────────
-    if run and selected:
-        city = selected
-
-        # ── Use real dataset rows for this city — exact simulation values, no prediction error ──
-        OUTPUT_COLS_ALL = [
-            "TotalOperationalCO2Save_kgCO2", "TotalEmbodiedCO2_kgCO2",
-            "CostAnnualSysSave_CAD", "TotalCO2Sav", "AnnSCCSav_CAD",
-            "BaseCostAnnual_CAD", "PercentCostSysSav_percent", "AnnGovtCostSav_CAD"
-        ]
-
-        with st.spinner(f"Filtering dataset for {city} / {ssp}…"):
-            df = DATASET[
-                (DATASET["City"] == city) &
-                (DATASET["SSP"]  == ssp)
-            ].copy().reset_index(drop=True)
-
-            if df.empty:
-                st.error(f"No data rows found for {city} + {ssp}. Try a different SSP scenario.")
-                st.stop()
-
-            df["GHG"]   = df["TotalCO2Sav"]
-            df["Owner"] = df["CostAnnualSysSave_CAD"]
-            df["Gov"]   = df["AnnGovtCostSav_CAD"]
-
-            def norm(s): return (s - s.min()) / (s.max() - s.min() + 1e-9)
-            df["GHG_n"]   = 1 - norm(df["GHG"])   # lower CO2 = better
-            df["Owner_n"] = norm(df["Owner"])
-            df["Gov_n"]   = norm(df["Gov"])
-            df["Score"]   = w_owner*df["Owner_n"] + w_gov*df["Gov_n"] + w_ghg*df["GHG_n"]
-
-            df_sorted = df.sort_values("Score", ascending=False).reset_index(drop=True)
-            best = df_sorted.iloc[0]
-
-        # ── Metric cards ──────────────────────────────
+    def render_city_results(city_name, ssp_v, be_values, pred, heading, chart_df=None, best_extra=None):
         st.markdown("---")
-        st.success(f"✅ Best retrofit found for **{city}** under **{ssp}** from {len(df):,} real simulation scenarios")
+        st.success(heading)
+
+        oor = check_out_of_range(be_values, RANGES, lambda k: ALL_VARS[k]["label"])
+        render_range_warning(oor)
 
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Composite score", f"{best['Score']:.4f}")
-        m2.metric("GHG reduction",   f"{best['GHG'] / 1000:,.1f} tCO₂e")
-        m3.metric("Owner savings",   f"${best['Owner']:,.0f}")
-        m4.metric("Gov savings",     f"${best['Gov']:,.0f}")
+        m1.metric("🌍 GHG saved (20yr)", format_output_value(output_meta("TotalCO2Sav"), pred["TotalCO2Sav"]))
+        m2.metric("💰 Owner savings",    format_output_value(output_meta("CostAnnualSysSave_CAD"), pred["CostAnnualSysSave_CAD"]))
+        m3.metric("🏛️ Gov savings",      format_output_value(output_meta("AnnGovtCostSav_CAD"), pred["AnnGovtCostSav_CAD"]))
+        if best_extra is not None:
+            m4.metric("Composite score", f"{best_extra['score']:.4f}")
+        else:
+            meta4 = output_meta("PercentCostSysSav_percent")
+            m4.metric(f"{meta4['icon']} {meta4['label']}", format_output_value(meta4, pred["PercentCostSysSav_percent"]))
 
         st.markdown("---")
 
-        # ─────────────────────────────────────────────
-        # VARIABLE CARD RENDERER  (LaTeX symbols + units)
-        # ─────────────────────────────────────────────
-        def var_card(k, meta, best_val, is_economic=False):
+        def city_var_card(k, meta, val, is_economic):
             lo_v, hi_v = RANGES[k]
-            pct = round((best_val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
-            pct = max(0, min(100, pct))
+            pct = round((val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
+            render_metric_card(meta["label"], meta["icon"], format_input_value(meta, val), pct, is_secondary=is_economic)
+            sym, unit = meta["symbol"], meta["unit"]
+            extra = f"Unit: ${unit}$ &nbsp;|&nbsp; " if unit not in ("—", "$") else ""
+            st.markdown(
+                f"$\\quad {sym}$ &nbsp;&nbsp; "
+                f"<span style='font-size:11px;color:#64748b;'>{extra}Range: {lo_v} – {hi_v}</span>",
+                unsafe_allow_html=True,
+            )
 
-            # ── numeric value string (no unit text — unit shown via LaTeX below) ──
-            if k in ("Loan", "Rebate") or meta["unit"] == "$":
-                val_str = f"${best_val:,.0f}"
-            elif meta["unit"] in ("%", r"\%"):
-                val_str = f"{best_val:.2f} %"
-            else:
-                val_str = f"{best_val:.3f}"
-
-            icon_class = "var-icon-economic" if is_economic else "var-icon-building"
-            bar_color  = "#78350f"  if is_economic else "#1a1a2e"
-
-            # ── render the card HTML (no symbol/unit text inside HTML) ────────────
-            st.markdown(f"""
-            <div class="var-card">
-              <div class="var-icon {icon_class}">{meta['icon']}</div>
-              <div class="var-info">
-                <div class="var-label">{meta['label']}</div>
-                <div class="var-value">{val_str}</div>
-              </div>
-              <div class="bar-wrap">
-                <div class="bar-track">
-                  <div class="bar-fill" style="width:{pct}%;background:{bar_color};"></div>
-                </div>
-                <div class="bar-pct">{pct}%</div>
-              </div>
-            </div>""", unsafe_allow_html=True)
-
-            # ── render symbol and unit via LaTeX ──────────────────────────────────
-            sym  = meta["symbol"]
-            unit = meta["unit"]
-            if unit not in ("—", "$"):
-                st.markdown(
-                    f"$\\quad {sym}$ &nbsp;&nbsp; "
-                    f"<span style='font-size:11px;color:#64748b;'>"
-                    f"Unit: ${unit}$ &nbsp;|&nbsp; Range: {lo_v} – {hi_v}</span>",
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f"$\\quad {sym}$ &nbsp;&nbsp; "
-                    f"<span style='font-size:11px;color:#64748b;'>"
-                    f"Range: {lo_v} – {hi_v}</span>",
-                    unsafe_allow_html=True
-                )
-
-        # ── Two result columns ─────────────────────────
         col_build, col_econ = st.columns(2, gap="large")
-
         with col_build:
-            st.markdown('<div class="result-group-title">🏗️ Building features</div>',
-                        unsafe_allow_html=True)
+            st.markdown('<div class="result-group-title">🏗️ Building features</div>', unsafe_allow_html=True)
             for k, meta in BUILDING_VARS.items():
-                var_card(k, meta, float(best[k]), is_economic=False)
-
+                city_var_card(k, meta, be_values[k], is_economic=False)
         with col_econ:
-            st.markdown('<div class="result-group-title">💰 Economic parameters</div>',
-                        unsafe_allow_html=True)
+            st.markdown('<div class="result-group-title">💰 Economic parameters</div>', unsafe_allow_html=True)
             for k, meta in ECONOMIC_VARS.items():
-                var_card(k, meta, float(best[k]), is_economic=True)
+                city_var_card(k, meta, be_values[k], is_economic=True)
 
         st.markdown("---")
 
-        # ── Predicted outcomes — full breakdown of all 8 output columns,
-        # same rounding/formatting and card layout as the archetype tab ──────
         res_carbon, res_cost = st.columns(2, gap="large")
-
         with res_carbon:
             st.markdown('<div class="result-group-title">🌿 Carbon impact</div>', unsafe_allow_html=True)
             for c in OUTPUT_COLS_ALL:
-                meta = output_meta(c)
-                if meta["group"] != "carbon":
+                m = output_meta(c)
+                if m["group"] != "carbon":
                     continue
-                lo_v, hi_v = float(df[c].min()), float(df[c].max())
-                val = float(best[c])
-                pct = round((val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
-                render_metric_card(meta["label"], meta["icon"], format_output_value(meta, val), pct, is_secondary=False)
-
+                if chart_df is not None:
+                    lo_v, hi_v = float(chart_df[c].min()), float(chart_df[c].max())
+                    pct = round((pred[c] - lo_v) / (hi_v - lo_v + 1e-9) * 100)
+                else:
+                    pct = 50
+                render_metric_card(m["label"], m["icon"], format_output_value(m, pred[c]), pct, is_secondary=False)
         with res_cost:
             st.markdown('<div class="result-group-title">💰 Cost impact</div>', unsafe_allow_html=True)
             for c in OUTPUT_COLS_ALL:
-                meta = output_meta(c)
-                if meta["group"] != "cost":
+                m = output_meta(c)
+                if m["group"] != "cost":
                     continue
-                lo_v, hi_v = float(df[c].min()), float(df[c].max())
-                val = float(best[c])
-                pct = round((val - lo_v) / (hi_v - lo_v + 1e-9) * 100)
-                render_metric_card(meta["label"], meta["icon"], format_output_value(meta, val), pct, is_secondary=True)
+                if chart_df is not None:
+                    lo_v, hi_v = float(chart_df[c].min()), float(chart_df[c].max())
+                    pct = round((pred[c] - lo_v) / (hi_v - lo_v + 1e-9) * 100)
+                else:
+                    pct = 50
+                render_metric_card(m["label"], m["icon"], format_output_value(m, pred[c]), pct, is_secondary=True)
 
-        st.markdown("---")
+        if chart_df is not None and best_extra is not None and len(chart_df) > 0:
+            st.markdown("---")
+            ch1, ch2, ch3 = st.columns(3, gap="small")
 
-        # ── Charts ────────────────────────────────────
-        ch1, ch2, ch3 = st.columns(3, gap="small")
+            with ch1:
+                fig_hist = px.histogram(chart_df, x="Score", nbins=40,
+                                        color_discrete_sequence=["#1a1a2e"],
+                                        title="Score distribution (sampled candidates)")
+                fig_hist.add_vline(x=best_extra["score"], line_dash="dash", line_color="#b91c1c",
+                                   annotation_text="Best", annotation_font_size=12, annotation_font_color="#b91c1c")
+                fig_hist.update_layout(
+                    margin=dict(t=40, b=10, l=10, r=10), height=230,
+                    showlegend=False, plot_bgcolor="white", paper_bgcolor="white",
+                    font=dict(color="#0a0a0a", size=12),
+                    title=dict(font=dict(size=14, color="#0a0a0a")),
+                    xaxis=dict(showgrid=False, title="", tickfont=dict(size=11, color="#0a0a0a")),
+                    yaxis=dict(showgrid=False, title="", tickfont=dict(size=11, color="#0a0a0a")),
+                )
+                st.plotly_chart(fig_hist, use_container_width=True)
 
-        with ch1:
-            fig_hist = px.histogram(df, x="Score", nbins=40,
-                                    color_discrete_sequence=["#1a1a2e"],
-                                    title="Score distribution")
-            fig_hist.add_vline(x=best["Score"], line_dash="dash",
-                               line_color="#b91c1c",
-                               annotation_text="Best",
-                               annotation_font_size=12,
-                               annotation_font_color="#b91c1c")
-            fig_hist.update_layout(
-                margin=dict(t=40,b=10,l=10,r=10), height=230,
-                showlegend=False, plot_bgcolor="white", paper_bgcolor="white",
-                font=dict(color="#0a0a0a", size=12),
-                title=dict(font=dict(size=14, color="#0a0a0a")),
-                xaxis=dict(showgrid=False, title="", tickfont=dict(size=11, color="#0a0a0a")),
-                yaxis=dict(showgrid=False, title="", tickfont=dict(size=11, color="#0a0a0a")),
-            )
-            st.plotly_chart(fig_hist, use_container_width=True)
-
-        with ch2:
-            fig_radar = go.Figure(go.Scatterpolar(
-                r=[best["Owner_n"], best["Gov_n"], best["GHG_n"], best["Owner_n"]],
-                theta=["Owner savings","Gov savings","GHG reduction","Owner savings"],
-                fill="toself",
-                fillcolor="rgba(26,26,46,0.12)",
-                line=dict(color="#1a1a2e", width=2.5),
-            ))
-            fig_radar.update_layout(
-                polar=dict(
-                    radialaxis=dict(range=[0,1], showticklabels=False,
-                                    gridcolor="#c9d4e0", linecolor="#c9d4e0"),
-                    angularaxis=dict(tickfont=dict(size=12, color="#0a0a0a"),
-                                     gridcolor="#c9d4e0"),
-                ),
-                margin=dict(t=40,b=20,l=50,r=50), height=230,
-                paper_bgcolor="white",
-                font=dict(color="#0a0a0a"),
-                title=dict(text="Objective profile", font=dict(size=14, color="#0a0a0a")),
-            )
-            st.plotly_chart(fig_radar, use_container_width=True)
-
-        with ch3:
-            sample_plot = df.sample(min(400, len(df)), random_state=1)
-
-            fig_par = go.Figure()
-
-            # All simulation points
-            fig_par.add_trace(go.Scatter3d(
-                x=sample_plot["Owner"],
-                y=sample_plot["Gov"],
-                z=sample_plot["GHG"] / 1000,
-                mode="markers",
-                marker=dict(
-                    size=3,
-                    color=sample_plot["Score"],
-                    colorscale=["#e2e8f0", "#1a1a2e"],
-                    opacity=0.5,
-                    showscale=False,
-                ),
-                name="Simulations",
-                hovertemplate=(
-                    "Owner: $%{x:,.0f}<br>"
-                    "Gov: $%{y:,.0f}<br>"
-                    "GHG: %{z:,.1f} tCO₂e<br>"
-                    "<extra></extra>"
-                ),
-            ))
-
-            # Best point
-            fig_par.add_trace(go.Scatter3d(
-                x=[best["Owner"]],
-                y=[best["Gov"]],
-                z=[best["GHG"] / 1000],
-                mode="markers",
-                marker=dict(size=10, color="#b91c1c", symbol="diamond"),
-                name="Best",
-                hovertemplate=(
-                    "⭐ Best solution<br>"
-                    "Owner: $%{x:,.0f}<br>"
-                    "Gov: $%{y:,.0f}<br>"
-                    "GHG: %{z:,.1f} tCO₂e<br>"
-                    "<extra></extra>"
-                ),
-            ))
-
-            fig_par.update_layout(
-                title=dict(text="Pareto space (3 objectives)", font=dict(size=14, color="#0a0a0a")),
-                height=350,
-                margin=dict(t=40, b=10, l=10, r=10),
-                paper_bgcolor="white",
-                font=dict(color="#0a0a0a", size=11),
-                scene=dict(
-                    xaxis=dict(
-                        title=dict(text="Owner savings ($)", font=dict(size=10)),
-                        backgroundcolor="white",
-                        gridcolor="#e2e8f0",
-                        showbackground=True,
-                        tickfont=dict(size=9),
+            with ch2:
+                fig_radar = go.Figure(go.Scatterpolar(
+                    r=[best_extra["owner_n"], best_extra["gov_n"], best_extra["ghg_n"], best_extra["owner_n"]],
+                    theta=["Owner savings", "Gov savings", "GHG reduction", "Owner savings"],
+                    fill="toself", fillcolor="rgba(26,26,46,0.12)",
+                    line=dict(color="#1a1a2e", width=2.5),
+                ))
+                fig_radar.update_layout(
+                    polar=dict(
+                        radialaxis=dict(range=[0, 1], showticklabels=False, gridcolor="#c9d4e0", linecolor="#c9d4e0"),
+                        angularaxis=dict(tickfont=dict(size=12, color="#0a0a0a"), gridcolor="#c9d4e0"),
                     ),
-                    yaxis=dict(
-                        title=dict(text="Gov savings ($)", font=dict(size=10)),
-                        backgroundcolor="white",
-                        gridcolor="#e2e8f0",
-                        showbackground=True,
-                        tickfont=dict(size=9),
+                    margin=dict(t=40, b=20, l=50, r=50), height=230,
+                    paper_bgcolor="white", font=dict(color="#0a0a0a"),
+                    title=dict(text="Objective profile", font=dict(size=14, color="#0a0a0a")),
+                )
+                st.plotly_chart(fig_radar, use_container_width=True)
+
+            with ch3:
+                sample_plot = chart_df.sample(min(400, len(chart_df)), random_state=1)
+                fig_par = go.Figure()
+                fig_par.add_trace(go.Scatter3d(
+                    x=sample_plot["Owner"], y=sample_plot["Gov"], z=sample_plot["GHG"] / 1000,
+                    mode="markers",
+                    marker=dict(size=3, color=sample_plot["Score"], colorscale=["#e2e8f0", "#1a1a2e"],
+                               opacity=0.5, showscale=False),
+                    name="Sampled candidates",
+                    hovertemplate="Owner: $%{x:,.0f}<br>Gov: $%{y:,.0f}<br>GHG: %{z:,.1f} tCO₂e<br><extra></extra>",
+                ))
+                fig_par.add_trace(go.Scatter3d(
+                    x=[best_extra["owner"]], y=[best_extra["gov"]], z=[best_extra["ghg"] / 1000],
+                    mode="markers", marker=dict(size=10, color="#b91c1c", symbol="diamond"),
+                    name="Best",
+                    hovertemplate="⭐ Best solution<br>Owner: $%{x:,.0f}<br>Gov: $%{y:,.0f}<br>GHG: %{z:,.1f} tCO₂e<br><extra></extra>",
+                ))
+                fig_par.update_layout(
+                    title=dict(text="Sampled retrofit space (3 objectives)", font=dict(size=14, color="#0a0a0a")),
+                    height=350, margin=dict(t=40, b=10, l=10, r=10),
+                    paper_bgcolor="white", font=dict(color="#0a0a0a", size=11),
+                    scene=dict(
+                        xaxis=dict(title=dict(text="Owner savings ($)", font=dict(size=10)),
+                                  backgroundcolor="white", gridcolor="#e2e8f0", showbackground=True, tickfont=dict(size=9)),
+                        yaxis=dict(title=dict(text="Gov savings ($)", font=dict(size=10)),
+                                  backgroundcolor="white", gridcolor="#e2e8f0", showbackground=True, tickfont=dict(size=9)),
+                        zaxis=dict(title=dict(text="GHG (tCO₂e)", font=dict(size=10)),
+                                  backgroundcolor="white", gridcolor="#e2e8f0", showbackground=True, tickfont=dict(size=9)),
                     ),
-                    zaxis=dict(
-                        title=dict(text="GHG (tCO₂e)", font=dict(size=10)),
-                        backgroundcolor="white",
-                        gridcolor="#e2e8f0",
-                        showbackground=True,
-                        tickfont=dict(size=9),
-                    ),
-                ),
-                legend=dict(
-                    x=0.01, y=0.99,
-                    font=dict(size=10),
-                    bgcolor="rgba(255,255,255,0.8)",
-                ),
+                    legend=dict(x=0.01, y=0.99, font=dict(size=10), bgcolor="rgba(255,255,255,0.8)"),
+                )
+                st.plotly_chart(fig_par, use_container_width=True)
+
+        with st.expander("About this prediction"):
+            st.caption(
+                "This comes from the per-city RBF interpolation model "
+                f"(`city_models/{city_name}_rbf.pkl`), evaluated for your chosen inputs — "
+                "not a lookup of an existing row in the CSV. Values may be interpolated "
+                "(and, if flagged above, extrapolated) rather than an exact simulated scenario."
             )
-            st.plotly_chart(fig_par, use_container_width=True)
+
+    # ─────────────────────────────────────────
+    # ACTION 1 — predict the exact typed-in values
+    # ─────────────────────────────────────────
+    if predict_clicked and selected:
+        be_vals = {k: float(st.session_state[f"city_in_{k}"]) for k in ALL_VARS}
+        footprint_v = float(st.session_state["city_footprint"])
+        elec_v = float(st.session_state["city_elec_inf"])
+        fuel_v = float(st.session_state["city_fuel_inf"])
+        ssp_v = st.session_state["city_ssp"]
+
+        pred = predict_city(selected, ssp_v, footprint_v, elec_v, fuel_v, be_vals)
+        render_city_results(
+            selected, ssp_v, be_vals, pred,
+            f"✅ Prediction for **{selected}** ({ssp_v}) with your entered values",
+        )
+
+    # ─────────────────────────────────────────
+    # ACTION 2 — search for the best retrofit plan
+    # ─────────────────────────────────────────
+    if optimize_clicked and selected:
+        with st.spinner(f"Searching retrofit combinations for {selected}…"):
+            N = 1500
+            rng = np.random.default_rng(42)
+            sample_be = pd.DataFrame({k: rng.uniform(RANGES[k][0], RANGES[k][1], N) for k in ALL_VARS})
+
+            footprint_v = float(st.session_state["city_footprint"])
+            elec_v = float(st.session_state["city_elec_inf"])
+            fuel_v = float(st.session_state["city_fuel_inf"])
+            ssp_v = st.session_state["city_ssp"]
+
+            pred_df = predict_city_batch(selected, ssp_v, footprint_v, elec_v, fuel_v, sample_be)
+
+            owner_arr = pred_df["CostAnnualSysSave_CAD"]
+            gov_arr   = pred_df["AnnGovtCostSav_CAD"]
+            ghg_arr   = pred_df["TotalCO2Sav"]
+
+            def _norm(s):
+                return (s - s.min()) / (s.max() - s.min() + 1e-9)
+
+            owner_n = _norm(owner_arr)
+            gov_n   = _norm(gov_arr)
+            ghg_n   = 1 - _norm(ghg_arr)  # lower CO2 = better, same convention as the original optimizer
+
+            score = w_owner * owner_n + w_gov * gov_n + w_ghg * ghg_n
+            best_idx = int(score.idxmax())
+
+            best_be   = sample_be.iloc[best_idx].to_dict()
+            best_pred = pred_df.iloc[best_idx].to_dict()
+
+            chart_df = sample_be.copy()
+            chart_df["Owner"], chart_df["Gov"], chart_df["GHG"] = owner_arr, gov_arr, ghg_arr
+            chart_df["Owner_n"], chart_df["Gov_n"], chart_df["GHG_n"] = owner_n, gov_n, ghg_n
+            chart_df["Score"] = score
+            for c in OUTPUT_COLS_ALL:
+                chart_df[c] = pred_df[c]
+
+        st.session_state["_city_pending"] = {
+            "be_values":   best_be,
+            "prediction":  best_pred,
+            "city":        selected,
+            "ssp":         ssp_v,
+            "n_searched":  N,
+            "chart_records": chart_df.to_dict("records"),
+            "score":    float(score[best_idx]),
+            "owner_n":  float(owner_n[best_idx]),
+            "gov_n":    float(gov_n[best_idx]),
+            "ghg_n":    float(ghg_n[best_idx]),
+            "owner":    float(owner_arr[best_idx]),
+            "gov":      float(gov_arr[best_idx]),
+            "ghg":      float(ghg_arr[best_idx]),
+        }
+        st.rerun()
+
+    # ─────────────────────────────────────────
+    # Show the optimizer result after the rerun above has applied it
+    # ─────────────────────────────────────────
+    if st.session_state.get("_city_show_optimized"):
+        _shown = st.session_state.pop("_city_show_optimized")
+        _chart_df = pd.DataFrame(_shown["chart_records"])
+        st.caption(
+            f"Searched {_shown['n_searched']:,} random retrofit combinations for "
+            f"**{_shown['city']}** ({_shown['ssp']}) — footprint/inflation held at your "
+            f"chosen values — and scored each with your objective weights."
+        )
+        render_city_results(
+            _shown["city"], _shown["ssp"], _shown["be_values"], _shown["prediction"],
+            f"🏆 Recommended retrofit plan for **{_shown['city']}** ({_shown['ssp']})",
+            chart_df=_chart_df,
+            best_extra={
+                "score": _shown["score"], "owner_n": _shown["owner_n"], "gov_n": _shown["gov_n"],
+                "ghg_n": _shown["ghg_n"], "owner": _shown["owner"], "gov": _shown["gov"], "ghg": _shown["ghg"],
+            },
+        )
 
 with tab_arch:
     if not archetype_model_ok:
@@ -877,8 +966,10 @@ with tab_arch:
             "glazing, roof/wall R-value); every other input starts at 0 until you set it "
             "or run the recommender."
         )
+        _mt = arch_stats.get("model_type", arch_bundle.get("model_type", "linear"))
+        _mt_label = "RBF (thin-plate-spline)" if _mt == "rbf" else "Linear Regression"
         st.caption(
-            f"Model: Linear Regression · trained on {arch_stats['n_rows']:,} rows · "
+            f"Model: {_mt_label} · trained on {arch_stats['n_rows']:,} rows · "
             f"test R² = {arch_stats['model_r2_test']:.3f}"
         )
         st.markdown("---")
@@ -1004,6 +1095,9 @@ with tab_arch:
             st.markdown("---")
             st.success(heading)
 
+            oor = check_out_of_range(input_values, arch_ranges, lambda c: input_meta(c)["label"])
+            render_range_warning(oor)
+
             headline_cols = [c for c in (OWNER_COL, GOV_COL, GHG_COL) if c]
             headline_cols += [c for c in arch_output_cols if c not in headline_cols]
             headline_cols = headline_cols[:4]
@@ -1091,7 +1185,7 @@ with tab_arch:
             row_df = pd.get_dummies(row_df, columns=[arch_cat_col])
             row_df = row_df.reindex(columns=arch_bundle["feature_cols"], fill_value=0)
             X_sc = arch_bundle["scaler"].transform(row_df.values.astype(float))
-            pred = arch_bundle["model"].predict(X_sc)[0]
+            pred = arch_model_predict(X_sc)[0]
             arch_result = dict(zip(arch_output_cols, pred.tolist()))
             render_arch_results(row, arch_result, f"✅ Prediction for **{selected_archetype}** with your entered values")
 
@@ -1126,7 +1220,7 @@ with tab_arch:
                 encode_df = encode_df.reindex(columns=arch_bundle["feature_cols"], fill_value=0)
 
                 X_sc = arch_bundle["scaler"].transform(encode_df.values.astype(float))
-                preds = arch_bundle["model"].predict(X_sc)
+                preds = arch_model_predict(X_sc)
                 pred_df = pd.DataFrame(preds, columns=arch_output_cols)
 
                 def _norm(s):
