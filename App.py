@@ -404,29 +404,6 @@ st.caption("Two tools in one app: an optimizer by city, and a plain regression p
 tab_city, tab_arch = st.tabs(["🏙️ By City — Optimizer", "📐 By Archetype — Predictor"])
 
 with tab_city:
-    # ── Seed default input values once, and apply any pending optimizer
-    # result BEFORE the matching widgets are created (same pattern as the
-    # archetype tab — Streamlit forbids writing to a widget's session_state
-    # key after that widget has already been instantiated this run). ────────
-    def _ensure_city_defaults():
-        for _k in ALL_VARS:
-            _key = f"city_in_{_k}"
-            if _key not in st.session_state:
-                _lo, _hi = RANGES[_k]
-                st.session_state[_key] = round((_lo + _hi) / 2, 3)
-        st.session_state.setdefault("city_footprint", 130.0)
-        st.session_state.setdefault("city_ssp", "SSP245")
-        st.session_state.setdefault("city_elec_inf", 0.01)
-        st.session_state.setdefault("city_fuel_inf", 0.05)
-
-    _ensure_city_defaults()
-
-    if "_city_pending" in st.session_state:
-        _cpending = st.session_state.pop("_city_pending")
-        for _k, _v in _cpending["be_values"].items():
-            st.session_state[f"city_in_{_k}"] = float(_v)
-        st.session_state["_city_show_optimized"] = _cpending
-
     st.markdown("### 🏙️ City Optimizer")
     st.caption("Click a city on the map, configure parameters, and run the optimizer.")
 
@@ -522,35 +499,18 @@ with tab_city:
 
     with ctrl_col:
         st.markdown('<div class="section-label">Building parameters</div>', unsafe_allow_html=True)
-        footprint = st.number_input("Building footprint (m²)", min_value=1.0, step=10.0, format="%.0f",
-                                     key="city_footprint")
-        ssp       = st.selectbox("SSP Scenario", ["SSP126", "SSP245", "SSP585"], key="city_ssp")
+        footprint = st.number_input("Building footprint (m²)", value=130.0, min_value=1.0, step=10.0, format="%.0f")
+        ssp       = st.selectbox("SSP Scenario", ["SSP126", "SSP245", "SSP585"], index=1)
 
         st.markdown('<div class="section-label" style="margin-top:12px;">Inflation rates</div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
-        elec_inf = c1.number_input("Electricity", min_value=0.0, step=0.005, format="%.3f",
-                                    key="city_elec_inf")
-        fuel_inf = c2.number_input("Fuel", min_value=0.0, step=0.005, format="%.3f",
-                                    key="city_fuel_inf")
-
-        st.markdown('<div class="section-label" style="margin-top:12px;">Retrofit parameters</div>', unsafe_allow_html=True)
-        st.caption(
-            "Used as-is by “Predict these exact values”. “Find recommended retrofit” "
-            "searches its own random combinations within each variable's trained range "
-            "instead, ignoring these."
-        )
-        for _k, _meta in ALL_VARS.items():
-            _lo, _hi = RANGES[_k]
-            _step = round(max((_hi - _lo) / 100, 0.001), 4)
-            st.number_input(
-                _meta["label"], step=_step, format="%.4f",
-                key=f"city_in_{_k}", help=f"Approx. training range: {_lo} – {_hi}",
-            )
+        elec_inf = c1.number_input("Electricity", value=0.01, min_value=0.0, step=0.005, format="%.3f")
+        fuel_inf = c2.number_input("Fuel",        value=0.05, min_value=0.0, step=0.005, format="%.3f")
 
         st.markdown('<div class="section-label" style="margin-top:12px;">Objective weights</div>', unsafe_allow_html=True)
-        w_owner = st.slider("🏠 Owner savings", 0.0, 1.0, 0.60, 0.05, key="city_w_owner")
-        w_gov   = st.slider("🏛️ Gov savings",   0.0, 1.0, 0.20, 0.05, key="city_w_gov")
-        w_ghg   = st.slider("🌿 GHG reduction", 0.0, 1.0, 0.20, 0.05, key="city_w_ghg")
+        w_owner = st.slider("🏠 Owner savings", 0.0, 1.0, 0.60, 0.05)
+        w_gov   = st.slider("🏛️ Gov savings",   0.0, 1.0, 0.20, 0.05)
+        w_ghg   = st.slider("🌿 GHG reduction", 0.0, 1.0, 0.20, 0.05)
 
         wsum = round(w_owner + w_gov + w_ghg, 2)
         if abs(wsum - 1.0) > 0.01:
@@ -563,14 +523,9 @@ with tab_city:
 
         city_has_model = selected in city_models
         ready = bool(selected) and weights_ok and model_ok and city_has_model
-
-        predict_clicked = st.button(
-            "▶ Predict these exact values", use_container_width=True,
-            disabled=not ready, key="city_predict_btn",
-        )
-        optimize_clicked = st.button(
-            f"🔍 Find recommended retrofit{' for ' + selected if selected else ''}",
-            type="primary", use_container_width=True, disabled=not ready, key="city_optimize_btn",
+        run = st.button(
+            f"▶ Find best retrofit{' for ' + selected if selected else ''}",
+            type="primary", use_container_width=True, disabled=not ready,
         )
         if not selected:
             st.caption("← Select a city on the map first")
@@ -729,36 +684,15 @@ with tab_city:
             )
 
     # ─────────────────────────────────────────
-    # ACTION 1 — predict the exact typed-in values
+    # OPTIMIZATION — search retrofit combinations via the RBF model
     # ─────────────────────────────────────────
-    if predict_clicked and selected:
-        be_vals = {k: float(st.session_state[f"city_in_{k}"]) for k in ALL_VARS}
-        footprint_v = float(st.session_state["city_footprint"])
-        elec_v = float(st.session_state["city_elec_inf"])
-        fuel_v = float(st.session_state["city_fuel_inf"])
-        ssp_v = st.session_state["city_ssp"]
-
-        pred = predict_city(selected, ssp_v, footprint_v, elec_v, fuel_v, be_vals)
-        render_city_results(
-            selected, ssp_v, be_vals, pred,
-            f"✅ Prediction for **{selected}** ({ssp_v}) with your entered values",
-        )
-
-    # ─────────────────────────────────────────
-    # ACTION 2 — search for the best retrofit plan
-    # ─────────────────────────────────────────
-    if optimize_clicked and selected:
+    if run and selected:
         with st.spinner(f"Searching retrofit combinations for {selected}…"):
             N = 1500
             rng = np.random.default_rng(42)
             sample_be = pd.DataFrame({k: rng.uniform(RANGES[k][0], RANGES[k][1], N) for k in ALL_VARS})
 
-            footprint_v = float(st.session_state["city_footprint"])
-            elec_v = float(st.session_state["city_elec_inf"])
-            fuel_v = float(st.session_state["city_fuel_inf"])
-            ssp_v = st.session_state["city_ssp"]
-
-            pred_df = predict_city_batch(selected, ssp_v, footprint_v, elec_v, fuel_v, sample_be)
+            pred_df = predict_city_batch(selected, ssp, float(footprint), float(elec_inf), float(fuel_inf), sample_be)
 
             owner_arr = pred_df["CostAnnualSysSave_CAD"]
             gov_arr   = pred_df["AnnGovtCostSav_CAD"]
@@ -769,7 +703,7 @@ with tab_city:
 
             owner_n = _norm(owner_arr)
             gov_n   = _norm(gov_arr)
-            ghg_n   = 1 - _norm(ghg_arr)  # lower CO2 = better, same convention as the original optimizer
+            ghg_n   = 1 - _norm(ghg_arr)  # lower CO2 = better, same convention as before
 
             score = w_owner * owner_n + w_gov * gov_n + w_ghg * ghg_n
             best_idx = int(score.idxmax())
@@ -784,41 +718,23 @@ with tab_city:
             for c in OUTPUT_COLS_ALL:
                 chart_df[c] = pred_df[c]
 
-        st.session_state["_city_pending"] = {
-            "be_values":   best_be,
-            "prediction":  best_pred,
-            "city":        selected,
-            "ssp":         ssp_v,
-            "n_searched":  N,
-            "chart_records": chart_df.to_dict("records"),
-            "score":    float(score[best_idx]),
-            "owner_n":  float(owner_n[best_idx]),
-            "gov_n":    float(gov_n[best_idx]),
-            "ghg_n":    float(ghg_n[best_idx]),
-            "owner":    float(owner_arr[best_idx]),
-            "gov":      float(gov_arr[best_idx]),
-            "ghg":      float(ghg_arr[best_idx]),
-        }
-        st.rerun()
-
-    # ─────────────────────────────────────────
-    # Show the optimizer result after the rerun above has applied it
-    # ─────────────────────────────────────────
-    if st.session_state.get("_city_show_optimized"):
-        _shown = st.session_state.pop("_city_show_optimized")
-        _chart_df = pd.DataFrame(_shown["chart_records"])
         st.caption(
-            f"Searched {_shown['n_searched']:,} random retrofit combinations for "
-            f"**{_shown['city']}** ({_shown['ssp']}) — footprint/inflation held at your "
-            f"chosen values — and scored each with your objective weights."
+            f"Searched {N:,} retrofit combinations for **{selected}** ({ssp}) through the "
+            f"city's RBF model — footprint/inflation held at your chosen values — and "
+            f"scored each with your objective weights."
         )
         render_city_results(
-            _shown["city"], _shown["ssp"], _shown["be_values"], _shown["prediction"],
-            f"🏆 Recommended retrofit plan for **{_shown['city']}** ({_shown['ssp']})",
-            chart_df=_chart_df,
+            selected, ssp, best_be, best_pred,
+            f"🏆 Best retrofit found for **{selected}** under **{ssp}**",
+            chart_df=chart_df,
             best_extra={
-                "score": _shown["score"], "owner_n": _shown["owner_n"], "gov_n": _shown["gov_n"],
-                "ghg_n": _shown["ghg_n"], "owner": _shown["owner"], "gov": _shown["gov"], "ghg": _shown["ghg"],
+                "score":   float(score[best_idx]),
+                "owner_n": float(owner_n[best_idx]),
+                "gov_n":   float(gov_n[best_idx]),
+                "ghg_n":   float(ghg_n[best_idx]),
+                "owner":   float(owner_arr[best_idx]),
+                "gov":     float(gov_arr[best_idx]),
+                "ghg":     float(ghg_arr[best_idx]),
             },
         )
 
