@@ -822,8 +822,8 @@ with tab_arch:
         # in the general parameter list on the right.
         LEFT_PARAM_COLS = [c for c in (COL_FOOTPRINT, COL_ELEC_INFL, COL_FUEL_INFL) if c]
         LEFT_PARAM_DEFAULTS = {
-            COL_ELEC_INFL:    0.01,
-            COL_FUEL_INFL:    0.01,
+            COL_ELEC_INFL:    0.010,
+            COL_FUEL_INFL:    0.010,
             COL_FOOTPRINT:    130.0,  # fixed default (matches the city tab), overrides the archetype table value
         }
 
@@ -962,6 +962,21 @@ with tab_arch:
                     key=f"arch_in_{c}", help=f"Training range: {lo} – {hi}",
                 )
 
+            st.markdown("<br>", unsafe_allow_html=True)
+            optimize_clicked = st.button(
+                f"🔍 Find recommended retrofit for {selected_archetype}",
+                type="primary", use_container_width=True, key="arch_optimize_btn",
+                disabled=not weights_ok_a,
+            )
+            if not weights_ok_a:
+                st.caption("↑ Fix the objective weights above to enable the recommender")
+            else:
+                st.caption(
+                    "Searches retrofit combinations for this archetype using the weights, "
+                    "footprint, and inflation rates above — the parameter values on the "
+                    "right are not used."
+                )
+
         # ─────────────────────────────────────────
         # RIGHT — INPUT PARAMETERS (editable, manual "what-if" prediction)
         # ─────────────────────────────────────────
@@ -992,15 +1007,10 @@ with tab_arch:
 
             st.markdown("<br>", unsafe_allow_html=True)
             arch_predict_clicked = st.button(
-                "▶ Predict these exact values", use_container_width=True, key="arch_predict_btn",
+                "▶ Predict these exact values", type="primary",
+                use_container_width=True, key="arch_predict_btn",
             )
-            optimize_clicked = st.button(
-                f"🔍 Find recommended retrofit for {selected_archetype}",
-                type="primary", use_container_width=True, key="arch_optimize_btn",
-                disabled=not weights_ok_a,
-            )
-            if not weights_ok_a:
-                st.caption("← Fix the objective weights above to enable the recommender")
+            st.caption("Runs the model with exactly the parameter values above.")
 
         # ─────────────────────────────────────────
         # RESULT RENDERER (shared by both actions)
