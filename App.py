@@ -822,8 +822,8 @@ with tab_arch:
         # in the general parameter list on the right.
         LEFT_PARAM_COLS = [c for c in (COL_FOOTPRINT, COL_ELEC_INFL, COL_FUEL_INFL) if c]
         LEFT_PARAM_DEFAULTS = {
-            COL_ELEC_INFL:    0.10,
-            COL_FUEL_INFL:    0.10,
+            COL_ELEC_INFL:    0.01,
+            COL_FUEL_INFL:    0.01,
             COL_FOOTPRINT:    130.0,  # fixed default (matches the city tab), overrides the archetype table value
         }
 
