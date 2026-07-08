@@ -807,26 +807,23 @@ with tab_arch:
         COL_ROOF_R    = resolve_col("rvalue", "roof") or resolve_col("roof", "r")
         COL_WALL_R    = resolve_col("rvalue", "wall") or resolve_col("wall", "r")
 
-        # ── Objective-weight input columns — these mirror the Owner/Gov/GHG
-        # sliders below, so they get sensible non-zero defaults instead of 0 ──
+        # ── Objective-weight input columns — NOT shown as widgets: their values
+        # are taken directly from the Owner/Gov/GHG sliders at prediction time ──
         COL_WEIGHT_OWNER = resolve_col("weight", "cost")
         COL_WEIGHT_GOV   = resolve_col("weight", "govt")
         COL_WEIGHT_GHG   = resolve_col("weight", "ghg")
+        WEIGHT_COLS = {c for c in (COL_WEIGHT_OWNER, COL_WEIGHT_GOV, COL_WEIGHT_GHG) if c}
 
-        # ── Inflation-rate columns — also moved to the left panel ──────────────
+        # ── Inflation-rate columns — shown on the left panel ───────────────────
         COL_ELEC_INFL = resolve_col("electric", "inflat")
         COL_FUEL_INFL = resolve_col("fuel", "inflat")
 
         # Columns rendered on the LEFT (with the archetype picker) instead of
         # in the general parameter list on the right.
-        LEFT_PARAM_COLS = [c for c in (COL_FOOTPRINT, COL_WEIGHT_OWNER, COL_WEIGHT_GOV, COL_WEIGHT_GHG,
-                                        COL_ELEC_INFL, COL_FUEL_INFL) if c]
+        LEFT_PARAM_COLS = [c for c in (COL_FOOTPRINT, COL_ELEC_INFL, COL_FUEL_INFL) if c]
         LEFT_PARAM_DEFAULTS = {
-            COL_WEIGHT_OWNER: 0.60,
-            COL_WEIGHT_GOV:   0.20,
-            COL_WEIGHT_GHG:   0.20,
-            COL_ELEC_INFL:    0.01,
-            COL_FUEL_INFL:    0.01,
+            COL_ELEC_INFL:    0.10,
+            COL_FUEL_INFL:    0.10,
             COL_FOOTPRINT:    130.0,  # fixed default (matches the city tab), overrides the archetype table value
         }
 
@@ -953,9 +950,9 @@ with tab_arch:
             st.markdown('<div class="section-label" style="margin-top:12px;">Scenario parameters</div>',
                         unsafe_allow_html=True)
             st.caption(
-                "Building footprint defaults to 130 m² for every archetype. The three "
-                "model weight inputs mirror the objective sliders above them, and the "
-                "two inflation rates default to 10% — edit any of them here if needed."
+                "Building footprint defaults to 130 m² for every archetype, and the two "
+                "inflation rates default to 10%. The model's objective-weight inputs are "
+                "taken directly from the sliders above."
             )
             for c in LEFT_PARAM_COLS:
                 lo, hi = arch_ranges[c]
@@ -970,8 +967,9 @@ with tab_arch:
         # ─────────────────────────────────────────
         with arch_col_ctrl:
             arch_user_inputs = {}
-            building_inputs = [c for c in arch_input_cols if input_meta(c)["group"] == "building" and c not in LEFT_PARAM_COLS]
-            economic_inputs = [c for c in arch_input_cols if input_meta(c)["group"] == "economic" and c not in LEFT_PARAM_COLS]
+            _hidden = set(LEFT_PARAM_COLS) | WEIGHT_COLS
+            building_inputs = [c for c in arch_input_cols if input_meta(c)["group"] == "building" and c not in _hidden]
+            economic_inputs = [c for c in arch_input_cols if input_meta(c)["group"] == "economic" and c not in _hidden]
 
             st.markdown('<div class="section-label">Building parameters</div>', unsafe_allow_html=True)
             for c in building_inputs:
@@ -1096,6 +1094,10 @@ with tab_arch:
         # ─────────────────────────────────────────
         if arch_predict_clicked:
             row = {c: float(st.session_state.get(f"arch_in_{c}", 0.0)) for c in arch_input_cols}
+            # Objective-weight model inputs come straight from the sliders
+            if COL_WEIGHT_OWNER: row[COL_WEIGHT_OWNER] = float(w_owner_a)
+            if COL_WEIGHT_GOV:   row[COL_WEIGHT_GOV]   = float(w_gov_a)
+            if COL_WEIGHT_GHG:   row[COL_WEIGHT_GHG]   = float(w_ghg_a)
             row[arch_cat_col] = selected_archetype
             row_df = pd.DataFrame([row])
             row_df = pd.get_dummies(row_df, columns=[arch_cat_col])
@@ -1128,6 +1130,10 @@ with tab_arch:
                 })
                 for c in FIXED_COLS:
                     numeric_df[c] = float(st.session_state.get(f"arch_in_{c}", 0.0))
+                # Objective-weight model inputs come straight from the sliders
+                if COL_WEIGHT_OWNER: numeric_df[COL_WEIGHT_OWNER] = float(w_owner_a)
+                if COL_WEIGHT_GOV:   numeric_df[COL_WEIGHT_GOV]   = float(w_gov_a)
+                if COL_WEIGHT_GHG:   numeric_df[COL_WEIGHT_GHG]   = float(w_ghg_a)
                 numeric_df = numeric_df[arch_input_cols]  # consistent column order
 
                 encode_df = numeric_df.copy()
