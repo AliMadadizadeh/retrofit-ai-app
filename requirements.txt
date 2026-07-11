@@ -1,9 +1,10 @@
-folium
-streamlit-folium
 streamlit
 pandas
 numpy
+joblib
+folium
+streamlit-folium
+plotly
 scipy
 scikit-learn
-joblib
-plotly
+ 
