@@ -10,7 +10,7 @@ import plotly.express as px
 
 # ── Resolve paths relative to this script — works locally and on Streamlit Cloud
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH  = os.path.join(BASE_DIR, "Maindataset.csv")
+DATA_PATH  = os.path.join(BASE_DIR, "retrofit_dataset_final_solution1.csv")
 MODEL_DIR  = os.path.join(BASE_DIR, "city_models")
 
 # ── Load the real dataset once ────────────────────────────────────────────────
@@ -822,8 +822,8 @@ with tab_arch:
         # in the general parameter list on the right.
         LEFT_PARAM_COLS = [c for c in (COL_FOOTPRINT, COL_ELEC_INFL, COL_FUEL_INFL) if c]
         LEFT_PARAM_DEFAULTS = {
-            COL_ELEC_INFL:    0.010,
-            COL_FUEL_INFL:    0.010,
+            COL_ELEC_INFL:    0.10,
+            COL_FUEL_INFL:    0.10,
             COL_FOOTPRINT:    130.0,  # fixed default (matches the city tab), overrides the archetype table value
         }
 
