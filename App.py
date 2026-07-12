@@ -10,19 +10,10 @@ import plotly.express as px
 
 # ── Resolve paths relative to this script — works locally and on Streamlit Cloud
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH  = os.path.join(BASE_DIR, "Maindataset.csv")
 MODEL_DIR  = os.path.join(BASE_DIR, "city_models")
 
-# ── Load the real dataset once ────────────────────────────────────────────────
-@st.cache_data
-def load_dataset():
-    return pd.read_csv(DATA_PATH)
-
-DATASET = load_dataset()
-
-
 # ─────────────────────────────────────────
-# PAGE CONFIG
+# PAGE CONFIG — must be the first Streamlit command
 # ─────────────────────────────────────────
 st.set_page_config(
     page_title="Retrofit AI",
