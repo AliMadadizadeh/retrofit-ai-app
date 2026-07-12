@@ -631,7 +631,7 @@
   "per_output_r2": {
     "TotalOperationalCO2Save_kgCO2": 0.9992,
     "TotalEmbodiedCO2_kgCO2": 0.9713,
-    "CostAnnualSysSave_CAD": 0.9132,
+    "CostAnnualSysSave_CAD": 0.9131,
     "TotalCO2Sav": 0.9992,
     "AnnSCCSav_CAD": 0.9992,
     "BaseCostAnnual_CAD": 0.9708,
@@ -639,13 +639,13 @@
     "AnnGovtCostSav_CAD": 0.9819
   },
   "model_r2_train": 0.9735,
-  "model_r2_test": 0.9688,
-  "model_mae": 225.62,
-  "model_rmse": 526.91,
+  "model_r2_test": 0.9687,
+  "model_mae": 225.61,
+  "model_rmse": 526.74,
   "n_rows": 400,
   "model_type": "linear",
   "comparison": {
-    "linear_r2_test": 0.9688,
+    "linear_r2_test": 0.9687,
     "rbf_r2_test": 0.963
   }
 }
