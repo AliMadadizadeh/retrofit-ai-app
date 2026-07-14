@@ -813,8 +813,8 @@ with tab_arch:
         # in the general parameter list on the right.
         LEFT_PARAM_COLS = [c for c in (COL_FOOTPRINT, COL_ELEC_INFL, COL_FUEL_INFL) if c]
         LEFT_PARAM_DEFAULTS = {
-            COL_ELEC_INFL:    0.10,
-            COL_FUEL_INFL:    0.10,
+            COL_ELEC_INFL:    0.010,
+            COL_FUEL_INFL:    0.010,
             COL_FOOTPRINT:    130.0,  # fixed default (matches the city tab), overrides the archetype table value
         }
 
@@ -843,15 +843,45 @@ with tab_arch:
             # NOTE: assumed to be Wall R variants (screenshot mislabeled both as "Roof R Value") — fix here if wrong
             "High_Wall_R":       {"BuildingFootprintArea_m2": 194, "Infiltration": 4.2,  "Glazing": 13.1/100, "Rvalue_roof": 4.3, "Rvalue_wall": 4.0},
             "Low_Wall_R":        {"BuildingFootprintArea_m2": 93,  "Infiltration": 9.6,  "Glazing": 7.4/100,  "Rvalue_roof": 2.2, "Rvalue_wall": 0.5},
+            # ── Cluster groups (Group1–Group9): means from the clustering table.
+            # ach → Infiltration, glazingRatio → Glazing (÷100),
+            # equivCeilingRVal → Rvalue_roof, equivWallRVal → Rvalue_wall.
+            # No footprint in the table — the 130 m² left-panel default applies.
+            "Group1": {"Infiltration": 7.87,  "Glazing": 9.58/100,  "Rvalue_roof": 2.10, "Rvalue_wall": 2.26},
+            "Group2": {"Infiltration": 8.80,  "Glazing": 8.74/100,  "Rvalue_roof": 3.51, "Rvalue_wall": 1.01},
+            "Group3": {"Infiltration": 14.44, "Glazing": 8.79/100,  "Rvalue_roof": 3.20, "Rvalue_wall": 1.67},
+            "Group4": {"Infiltration": 8.46,  "Glazing": 11.39/100, "Rvalue_roof": 3.70, "Rvalue_wall": 2.09},
+            "Group5": {"Infiltration": 7.89,  "Glazing": 9.38/100,  "Rvalue_roof": 4.08, "Rvalue_wall": 2.30},
+            "Group6": {"Infiltration": 5.80,  "Glazing": 22.84/100, "Rvalue_roof": 4.25, "Rvalue_wall": 2.46},
+            "Group7": {"Infiltration": 5.20,  "Glazing": 10.17/100, "Rvalue_roof": 4.77, "Rvalue_wall": 2.23},
+            "Group8": {"Infiltration": 4.95,  "Glazing": 10.65/100, "Rvalue_roof": 5.01, "Rvalue_wall": 2.47},
+            "Group9": {"Infiltration": 5.22,  "Glazing": 10.99/100, "Rvalue_roof": 4.87, "Rvalue_wall": 3.18},
+        }
+
+        # ── Group descriptions (from the clustering summary table) ─────────────
+        ARCHETYPE_DESCRIPTIONS = {
+            "Group1": "Weak ceiling insulation",
+            "Group2": "Very leaky outlier, minimal wall insulation",
+            "Group3": "Very leaky outlier, weak ceiling insulation, minimal wall insulation",
+            "Group4": "Leaky, heavily glazed outlier, minimal wall insulation",
+            "Group5": "Leaky",
+            "Group6": "Heavily glazed outlier, best wall insulation",
+            "Group7": "Airtight, strong ceiling insulation",
+            "Group8": "Airtight, strong ceiling insulation, best wall insulation",
+            "Group9": "Airtight, large-window, strong ceiling insulation, best wall insulation",
         }
 
         def _norm_label(s):
             return "".join(ch for ch in s.lower() if ch.isalnum())
 
         _SCREENSHOT_LOOKUP = {_norm_label(k): v for k, v in SCREENSHOT_DEFAULTS.items()}
+        _DESCRIPTION_LOOKUP = {_norm_label(k): v for k, v in ARCHETYPE_DESCRIPTIONS.items()}
 
         def get_screenshot_defaults(archetype_label):
             return _SCREENSHOT_LOOKUP.get(_norm_label(archetype_label))
+
+        def get_archetype_description(archetype_label):
+            return _DESCRIPTION_LOOKUP.get(_norm_label(archetype_label))
 
         FIELD_TO_COL = {
             "BuildingFootprintArea_m2": COL_FOOTPRINT,
@@ -912,17 +942,61 @@ with tab_arch:
                 f'<div class="city-selected">📐 {selected_archetype}</div>',
                 unsafe_allow_html=True,
             )
+            _desc = get_archetype_description(selected_archetype)
+            if _desc:
+                st.caption(f"ℹ️ {_desc}")
             if not st.session_state.get("_arch_has_screenshot", True):
-                st.caption("⚠️ No screenshot reference values for this archetype — all inputs default to 0.")
+                st.caption("⚠️ No reference values for this archetype — all inputs default to 0.")
 
-            btn_cols = st.columns(5)
-            for i, a in enumerate(arch_list):
-                with btn_cols[i % 5]:
-                    if st.button(a, key=f"arch_btn_{a}",
-                                 type="primary" if a == selected_archetype else "secondary",
-                                 use_container_width=True):
-                        _apply_archetype_defaults(a)
-                        st.rerun()
+            # ── Categorize archetypes: vintage / High-Low variants / cluster groups ──
+            def _arch_category(a):
+                n = _norm_label(a)
+                if n.startswith("group"):
+                    return "group"
+                if n.startswith("high") or n.startswith("low"):
+                    return "variant"
+                if n.startswith("pre") or n.isdigit():
+                    return "vintage"
+                return "other"
+
+            _vintages = [a for a in arch_list if _arch_category(a) == "vintage"]
+            _variants = [a for a in arch_list if _arch_category(a) == "variant"]
+            _groups   = [a for a in arch_list if _arch_category(a) == "group"]
+            _others   = [a for a in arch_list if _arch_category(a) == "other"]
+
+            def _render_arch_buttons(items, per_row=5):
+                cols = st.columns(per_row)
+                for i, a in enumerate(items):
+                    with cols[i % per_row]:
+                        if st.button(a, key=f"arch_btn_{a}",
+                                     type="primary" if a == selected_archetype else "secondary",
+                                     use_container_width=True):
+                            _apply_archetype_defaults(a)
+                            st.rerun()
+
+            if _vintages:
+                st.markdown('<div class="section-label" style="margin-top:10px;">🏚️ By construction vintage (decade built)</div>',
+                            unsafe_allow_html=True)
+                _render_arch_buttons(_vintages)
+
+            if _variants:
+                st.markdown('<div class="section-label" style="margin-top:10px;">↕️ By parameter extreme (High / Low value)</div>',
+                            unsafe_allow_html=True)
+                _render_arch_buttons(_variants)
+
+            if _groups:
+                st.markdown('<div class="section-label" style="margin-top:10px;">🧩 By building cluster (Groups 1–9)</div>',
+                            unsafe_allow_html=True)
+                _render_arch_buttons(_groups)
+                with st.expander("What is each group?"):
+                    for g in _groups:
+                        d = get_archetype_description(g)
+                        st.markdown(f"**{g}** — {d if d else 'no description available'}")
+
+            if _others:
+                st.markdown('<div class="section-label" style="margin-top:10px;">Other archetypes</div>',
+                            unsafe_allow_html=True)
+                _render_arch_buttons(_others)
 
             st.markdown('<div class="section-label" style="margin-top:12px;">Objective weights (for recommender)</div>',
                         unsafe_allow_html=True)
